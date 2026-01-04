@@ -269,7 +269,3 @@ class TestEdgeCases:
         # They should be different, but we'll just verify both are valid
         assert -1 <= corr_weighted <= 1
         assert -1 <= corr_unweighted <= 1
-
-
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])

@@ -23,6 +23,22 @@ cdo --version
 - Variable: Sea Surface Temperature
 - Ensemble members: Multiple realizations
 
+## Using the Preprocessing Script
+
+The `scripts/preprocess_sst.sh` script provides a complete preprocessing pipeline. You can configure it using environment variables:
+
+```bash
+# Set data paths
+export OBS_DATA_PATH="/path/to/observations/sst_monthly_2023.nc"
+export MODEL_DATA_PATH="/path/to/mpi_ge/member001/sst_monthly.nc"
+export MODEL_CLIM_PATH="/path/to/mpi_ge/member001/sst_monthly_all_years.nc"
+
+# Run the script
+./scripts/preprocess_sst.sh
+```
+
+Or edit the paths directly in the script before running.
+
 ## Preprocessing Steps
 
 ### 1. Select JJA Season (June, July, August)

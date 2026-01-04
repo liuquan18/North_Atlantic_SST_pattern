@@ -47,7 +47,26 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Verify Installation
+### 3. Install the Package (Optional but Recommended)
+
+For easier imports and development, install the package in editable mode:
+
+```bash
+# After activating your environment
+pip install -e .
+
+# Or with development dependencies
+pip install -e ".[dev,viz]"
+```
+
+This allows you to import the package from anywhere:
+```python
+from src import calculate_pattern_correlation
+# or
+from src.pattern_correlation import calculate_spatial_correlation
+```
+
+### 4. Verify Installation
 
 ```bash
 conda activate north_atlantic_sst

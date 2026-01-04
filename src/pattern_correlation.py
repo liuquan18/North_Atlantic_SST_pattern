@@ -7,7 +7,7 @@ SST (Sea Surface Temperature) patterns.
 
 import numpy as np
 import xarray as xr
-from typing import Union, Tuple
+from typing import Union
 
 
 def calculate_pattern_correlation(

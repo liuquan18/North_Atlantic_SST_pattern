@@ -6,10 +6,11 @@
 set -e  # Exit on error
 
 # Configuration
-# TODO: Update these paths to match your data location on Levante
-OBS_DATA_PATH="/path/to/observations/sst_monthly_2023.nc"
-MODEL_DATA_PATH="/path/to/mpi_ge/member001/sst_monthly.nc"
-MODEL_CLIM_PATH="/path/to/mpi_ge/member001/sst_monthly_all_years.nc"
+# Update these paths to match your data location on Levante
+# Or set them as environment variables before running this script
+OBS_DATA_PATH="${OBS_DATA_PATH:-/path/to/observations/sst_monthly_2023.nc}"
+MODEL_DATA_PATH="${MODEL_DATA_PATH:-/path/to/mpi_ge/member001/sst_monthly.nc}"
+MODEL_CLIM_PATH="${MODEL_CLIM_PATH:-/path/to/mpi_ge/member001/sst_monthly_all_years.nc}"
 
 # Output directories
 DATA_DIR="$(dirname "$0")/../data"
