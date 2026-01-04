@@ -1,0 +1,46 @@
+name: north_atlantic_sst
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python
+  - python=3.11
+  
+  # Core scientific computing
+  - numpy>=1.24
+  - scipy>=1.10
+  - pandas>=2.0
+  
+  # Data handling and analysis
+  - xarray>=2023.1
+  - netcdf4>=1.6
+  - h5netcdf>=1.2
+  - dask>=2023.1
+  
+  # Visualization
+  - matplotlib>=3.7
+  - cartopy>=0.21
+  - seaborn>=0.12
+  
+  # Climate data tools
+  - cdo>=2.0  # Climate Data Operators
+  - nco>=5.0  # NetCDF Operators
+  
+  # Utilities
+  - jupyter>=1.0
+  - ipython>=8.0
+  - tqdm>=4.65
+  
+  # Development and testing
+  - pytest>=7.0
+  - pytest-cov>=4.0
+  - black>=23.0
+  - flake8>=6.0
+  
+  # Additional useful packages
+  - bottleneck>=1.3  # Faster xarray operations
+  - pip>=23.0
+  
+  # Pip packages (if any are not available via conda)
+  - pip:
+    - xskillscore>=0.0.24  # For pattern correlation verification
