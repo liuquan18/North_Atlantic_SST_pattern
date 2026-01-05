@@ -8,6 +8,11 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+
+# Data files (but keep directory structure)
+data/*
+!data/.gitkeep
+!data/README.md
 build/
 develop-eggs/
 dist/

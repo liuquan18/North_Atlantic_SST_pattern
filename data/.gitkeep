@@ -1,0 +1,5 @@
+# This file ensures the data directory is tracked by git
+# Place your data files here:
+# - data/raw/        - Raw data from Levante
+# - data/processed/  - Processed data ready for analysis
+# - data/results/    - Analysis results and figures
