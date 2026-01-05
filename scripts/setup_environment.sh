@@ -13,7 +13,8 @@ if [[ $(hostname) == *"levante"* ]]; then
     echo "Running on Levante..."
     
     # Load conda module (adjust if needed based on Levante's module system)
-    module load conda 2>/dev/null || module load anaconda3 2>/dev/null || echo "Note: conda module not loaded, assuming conda is available"
+    module load python3/unstable
+    module load openmpi
 else
     echo "Warning: Not running on Levante. Proceeding anyway..."
 fi
@@ -27,15 +28,15 @@ echo "Project root: $PROJECT_ROOT"
 echo ""
 
 # Check if environment already exists
-if conda env list | grep -q "north_atlantic_sst"; then
-    echo "Environment 'north_atlantic_sst' already exists."
+if conda env list | grep -q "nalt"; then
+    echo "Environment 'nalt' already exists."
     read -p "Do you want to remove and recreate it? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "Removing existing environment..."
-        conda env remove -n north_atlantic_sst -y
+        conda env remove -n nalt -y
     else
-        echo "Keeping existing environment. Use 'conda activate north_atlantic_sst' to activate."
+        echo "Keeping existing environment. Use 'conda activate nalt' to activate."
         exit 0
     fi
 fi
