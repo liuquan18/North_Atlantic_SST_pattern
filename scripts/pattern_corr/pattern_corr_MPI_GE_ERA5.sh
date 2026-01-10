@@ -26,7 +26,26 @@ process_ensemble() {
         era_file=$4
         
         outfile="${corr_dir}$(basename $infile)"
-        cdo -r -f nc -fldcor $infile $era_file $outfile
+        
+        # Get number of time steps in the MPI-GE file
+        ntimesteps=$(cdo -s ntime $infile)
+        
+        # Create temporary directory for this file
+        tmp_dir="${corr_dir}/tmp_$(basename $infile .nc)"
+        mkdir -p $tmp_dir
+        
+        # Loop over each time step and calculate correlation
+        for t in $(seq 1 $ntimesteps); do
+            tmp_file="${tmp_dir}/corr_t${t}.nc"
+            # Extract time step t, calculate spatial correlation with ERA5, output as single time step
+            cdo -r -f nc -fldcor -seltimestep,$t $infile $era_file $tmp_file
+        done
+        
+        # Merge all time steps into final output file
+        cdo -r -f nc mergetime ${tmp_dir}/corr_t*.nc $outfile
+        
+        # Clean up temporary files
+        rm -rf $tmp_dir
     }
 
     # Export the function for parallel
