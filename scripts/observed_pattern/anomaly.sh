@@ -1,4 +1,5 @@
 #!/bin/bash
+module load cdo/2.5.0-gcc-11.2.0
 
 # Define directories
 era_dir="/pool/data/ERA5/E5/sf/an/1M/034"
@@ -15,7 +16,7 @@ mkdir -p "$anom_dir"
 module load cdo/2.5.0-gcc-11.2.0
 
 # Target grid for remapping
-target_grid="/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r10i1p1f1/Amon/ts/gn/v20190710/ts_Amon_MPI-ESM1-2-LR_historical_r10i1p1f1_gn_185001-186912.nc"
+target_grid="/scratch/m/m300883/nalt/MPI_GE_CMIP6/anomaly/r1i1p1f1/ts_Amon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_199001-200912.nc"
 
 # Define the climatology period
 start_year=1991
@@ -32,19 +33,15 @@ echo "=========================================="
 echo "Calculating Climatologies (1991-2020)"
 echo "=========================================="
 
-# 1. June Climatology
-echo "Calculating June Climatology..."
-cdo -r -f nc -remapbil,$target_grid -setgridtype,regular -timmean -selmon,6 -mergetime $clim_files "${clim_dir}/clim_jun.nc"
 
-# 2. July Climatology
-echo "Calculating July Climatology..."
-cdo -r -f nc -remapbil,$target_grid -setgridtype,regular -timmean -selmon,7 -mergetime $clim_files "${clim_dir}/clim_jul.nc"
-echo "Calculating August Climatology..."
-cdo -r -f nc -remapbil,$target_grid -setgridtype,regular -timmean -selmon,8 -mergetime $clim_files "${clim_dir}/clim_aug.nc"
+# climatology calculations
+cdo -r -f nc -sellonlatbox,280,360,0,70 -remapbil,$target_grid -setgridtype,regular -ymonmean -selmon,6,7,8 -mergetime $clim_files ${clim_dir}/clim_nalt_1991_06-2020_08.nc
+
 
 # 4. JJA Climatology
 echo "Calculating JJA Climatology..."
-cdo -r -f nc -remapbil,$target_grid -setgridtype,regular -timmean -selmon,6,7,8 -mergetime $clim_files "${clim_dir}/clim_jja.nc"
+cdo -r -f nc -sellonlatbox,280,360,0,70 -remapbil,$target_grid -setgridtype,regular -timmean -selmon,6,7,8 -mergetime $clim_files "${clim_dir}/clim_jja.nc"
+
 
 echo "=========================================="
 echo "Calculating Anomalies for 2023"
@@ -58,28 +55,11 @@ if [ ! -f "$file_2023" ]; then
     exit 1
 fi
 
-# 1. June Anomaly
-echo "Calculating June 2023 Anomaly..."
-# Select June 2023, subtract June Climatology
-cdo -O -f nc sub -remapbil,$target_grid -setgridtype,regular -selmon,6 "$file_2023" "${clim_dir}/clim_jun.nc" "${anom_dir}/anom_2023_jun.nc"
+echo "Calculating 2023 Anomaly..."
 
-# 2. July Anomaly
-echo "Calculating July 2023 Anomaly..."
-cdo -O -f nc sub -remapbil,$target_grid -setgridtype,regular -selmon,7 "$file_2023" "${clim_dir}/clim_jul.nc" "${anom_dir}/anom_2023_jul.nc"
-# 3. August Anomaly
-echo "Calculating August 2023 Anomaly..."
-cdo -O -f nc sub -remapbil,$target_grid -setgridtype,regular -selmon,8 "$file_2023" "${clim_dir}/clim_aug.nc" "${anom_dir}/anom_2023_aug.nc"
+cdo -r -f nc -ymonsub -selmon,6,7,8 -remapbil,$target_grid -sellonlatbox,280,360,0,70 -setgridtype,regular "$file_2023" "${clim_dir}/clim_nalt_1991_06-2020_08.nc" "${anom_dir}/anom_2023_06_2023_08.nc"
+
 
 # 4. JJA Anomaly
-echo "Calculating JJA 2023 Anomaly..."
-# Calculate JJA mean for 2023 first, then subtract JJA Climatology
-cdo -O -f nc sub -timmean -remapbil,$target_grid -setgridtype,regular -selmon,6,7,8 "$file_2023" "${clim_dir}/clim_jja.nc" "${anom_dir}/anom_2023_jja.nc"
-
-echo "Done."
-
-# 5. select lonlat box 80W-40E, 0-70N for all anomaly files
-echo "Selecting North Atlantic region (80W-40E, 0-70N) for all anomaly files..."
-for month in jun jul aug jja; do
-    cdo -sellonlatbox,280,360,0,70 "${anom_dir}/anom_2023_${month}.nc" "${anom_dir}/anom_2023_${month}_natl.nc"
-    echo "  - Processed: ${anom_dir}/anom_2023_${month}_natl.nc"
-done
+echo "Calculating JJA Anomaly for 2023..."
+cdo -r -f nc -timmean "${anom_dir}/anom_2023_06_2023_08.nc" "${anom_dir}/anom_2023_jja.nc"
