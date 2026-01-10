@@ -63,4 +63,4 @@ export era_file
 echo "=========================================="
 echo "Calculating pattern correlation for ensembles 1 to 50"
 echo "=========================================="
-parallel -j 1 process_ensemble ::: {1..50}
+parallel -j 5 process_ensemble ::: {1..50}
