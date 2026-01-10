@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=wind_isent
-#SBATCH --output=wind_isent.%j.out
+#SBATCH --job-name=corr_MPI_ERA5
+#SBATCH --output=corr_MPI_ERA5.%j.out
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=10
 #SBATCH --time=02:00:00
