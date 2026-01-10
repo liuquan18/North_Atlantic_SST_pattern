@@ -77,4 +77,4 @@ export -f process_ensemble
 echo "=========================================="
 echo "Processing ensemble members 1 to 50"
 echo "=========================================="
-parallel -j 1 process_ensemble ::: {1..50}
+parallel -j 5 process_ensemble ::: {1..50}
