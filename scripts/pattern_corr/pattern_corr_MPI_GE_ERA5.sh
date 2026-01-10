@@ -26,7 +26,7 @@ process_ensemble() {
         era_file=$4
         
         outfile="${corr_dir}$(basename $infile)"
-        cdo -r -f nc -fldcor -remapbil,$infile $era_file $infile $outfile
+        cdo -r -f nc -fldcor $infile $era_file $outfile
     }
 
     # Export the function for parallel
