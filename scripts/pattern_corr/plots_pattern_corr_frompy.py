@@ -37,6 +37,11 @@ ds_year = corrs.mean(dim="ens").groupby("time.year").mean(dim="time")
 fig, ax = plt.subplots(figsize=(8, 6))
 ds_year.plot(ax=ax)
 ax.set_title("Pattern Correlation average over all ensemble members")
+ax.set_ylabel("Pattern Correlation")
+plt.savefig(
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/pattern_corr_avg_ens.png",
+    dpi=300,
+)
 # %%
 # Prepare data for combined plot
 # Add decade grouping
