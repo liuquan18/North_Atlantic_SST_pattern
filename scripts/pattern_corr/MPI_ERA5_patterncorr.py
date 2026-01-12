@@ -42,16 +42,6 @@ for i, ens_num in enumerate(ens_for_rank):
     model_data = read_ensemble_data(ens_num)
     corr = spatial_corr_model_era(model_data, ERA5_data)
 
-    # Ensure output directory exists (only one rank needs to do this)
-    if rank == 0:
-        import os
-
-        os.makedirs(
-            "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr",
-            exist_ok=True,
-        )
-    comm.Barrier()  # Wait for directory creation
-
     # Save the correlation results for this ensemble member
     output_file = f"/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr/mpi_era5_patterncorr_ens{ens_num:02d}.nc"
     corr.to_netcdf(output_file)
