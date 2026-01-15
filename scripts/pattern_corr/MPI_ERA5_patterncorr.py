@@ -13,6 +13,7 @@ import mpi4py.MPI as MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
+normalize = True
 
 # Debug: Verify MPI is working
 print(f"MPI initialized: Rank {rank} of {size} processes", flush=True)
@@ -43,6 +44,15 @@ def read_ensemble_data(ens_num):
     model_data = model_data.rename({"year": "time"})
     return model_data
 
+#%%
+# function to do spatial normalize
+def spatial_normalize(data):
+    spatial_mean = data.mean(dim=["lat", "lon"])
+    spatial_anomaly = data - spatial_mean
+    spatial_std = spatial_anomaly.std(dim=["lat", "lon"])
+    normalized_data = spatial_anomaly / spatial_std
+    return normalized_data
+
 
 # %%
 
@@ -57,10 +67,13 @@ for i, ens_num in enumerate(ens_for_rank):
         flush=True,
     )
     model_data = read_ensemble_data(ens_num)
+    if normalize:
+        model_data = spatial_normalize(model_data)
+        ERA5_data = spatial_normalize(ERA5_data)
     corr = spatial_corr_model_era(model_data, ERA5_data)
 
     # Save the correlation results for this ensemble member
-    output_file = f"/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr_JJA/mpi_era5_patterncorr_ens{ens_num:02d}.nc"
+    output_file = f"/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr_JJA_norm/mpi_era5_patterncorr_ens{ens_num:02d}.nc"
     corr.to_netcdf(output_file)
     print(f"Rank {rank} saved ensemble {ens_num} to {output_file}", flush=True)
 # %%
