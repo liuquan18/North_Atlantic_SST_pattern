@@ -24,13 +24,17 @@ try:
     var_name = list(ds_monthly.data_vars)[-1]
     data_monthly = ds_monthly[var_name]
 
-    # Plot each month (Jun, Jul, Aug)
+    # Plot each month (Jun, Jul, Aug) with spatial mean removed
     month_names = ["June", "July", "August"]
     for i in range(3):
         ax = axes[i]
         data = data_monthly.isel(time=i)
 
-        im = data.plot(
+        # Remove spatial mean
+        spatial_mean = data.mean(dim=["lat", "lon"])
+        spatial_anomaly = data - spatial_mean
+
+        im = spatial_anomaly.plot(
             ax=ax,
             transform=ccrs.PlateCarree(),
             cmap="RdBu_r",
@@ -44,7 +48,9 @@ try:
         ax.gridlines(
             draw_labels=True, dms=True, x_inline=False, y_inline=False, linewidth=0
         )
-        ax.set_title(f"SST Anomaly 2023 - {month_names[i]}")
+        ax.set_title(
+            f"SST Spatial Anomaly 2023 - {month_names[i]}\n(Spatial mean removed: {spatial_mean.values:.3f} K)"
+        )
         ax.set_extent([-80, 0, 0, 70], crs=ccrs.PlateCarree())
 
 except FileNotFoundError:
@@ -59,7 +65,7 @@ except FileNotFoundError:
             transform=axes[i].transAxes,
         )
 
-# Plot JJA seasonal mean
+# Plot JJA seasonal mean with spatial mean removed
 try:
     ax = axes[3]
     ds_jja = xr.open_dataset(data_dir + jja_file)
@@ -70,7 +76,11 @@ try:
     if "time" in data_jja.dims:
         data_jja = data_jja.squeeze()
 
-    im = data_jja.plot(
+    # Remove spatial mean
+    spatial_mean_jja = data_jja.mean(dim=["lat", "lon"])
+    spatial_anomaly_jja = data_jja - spatial_mean_jja
+
+    im = spatial_anomaly_jja.plot(
         ax=ax,
         transform=ccrs.PlateCarree(),
         cmap="RdBu_r",
@@ -84,7 +94,9 @@ try:
     ax.gridlines(
         draw_labels=True, dms=True, x_inline=False, y_inline=False, linewidth=0
     )
-    ax.set_title(f"SST Anomaly 2023 - JJA (Seasonal Mean)")
+    ax.set_title(
+        f"SST Spatial Anomaly 2023 - JJA (Seasonal Mean)\n(Spatial mean removed: {spatial_mean_jja.values:.3f} K)"
+    )
     ax.set_extent([-80, 0, 0, 70], crs=ccrs.PlateCarree())
 
 except FileNotFoundError:
@@ -100,13 +112,13 @@ except FileNotFoundError:
 
 # Add colorbar
 cbar_ax = fig.add_axes([0.92, 0.15, 0.02, 0.7])
-fig.colorbar(im, cax=cbar_ax, label="SST Anomaly (K)")
+fig.colorbar(im, cax=cbar_ax, label="SST Spatial Anomaly (K)")
 
 plt.suptitle(
-    "North Atlantic SST Anomalies (2023) vs 1991-2020 Climatology", fontsize=16
+    "North Atlantic SST Spatial Anomalies (2023) - Spatial Mean Removed", fontsize=16
 )
 plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/doc/observed_sst_anomaly_2023.png",
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/doc/observed_sst_spatial_anomaly_2023.png",
     bbox_inches="tight",
 )
 plt.show()

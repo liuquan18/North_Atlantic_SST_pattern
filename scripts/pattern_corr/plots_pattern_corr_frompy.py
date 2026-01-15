@@ -7,7 +7,7 @@ import cartopy.crs as ccrs
 
 # %%
 # Read pattern correlation data with proper ensemble indexing
-base_dir = "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr/"
+base_dir = "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr_JJA/"
 corr_files = sorted(glob.glob(base_dir + "mpi_era5_patterncorr_ens*.nc"))
 # Extract ensemble numbers from filenames
 corr_ens_nums = [int(f.split("ens")[1].split(".nc")[0]) for f in corr_files]
@@ -30,25 +30,26 @@ for ens_num in corr_ens_nums:
     anom_data.append(ens_ds)
 # Combine all ensembles into a single dataset
 anom_data = xr.concat(anom_data, dim="ens")
-
 # %%
-ds_year = corrs.mean(dim="ens").groupby("time.year").mean(dim="time")
+anom_data = anom_data.groupby("time.year").mean("time").rename({"year": "time"})
+# %%
+ds_year = corrs.mean(dim="ens")
 # %%
 fig, ax = plt.subplots(figsize=(8, 6))
 ds_year.plot(ax=ax)
-ax.set_title("Pattern Correlation average over all ensemble members")
-ax.set_ylabel("Pattern Correlation")
+ax.set_title("Pattern Correlation average over all ensemble members (JJA)")
+ax.set_ylabel("Pattern Correlation (JJA)")
 plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/pattern_corr_avg_ens.png",
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/pattern_corr_avg_ens_JJA.png",
     dpi=300,
 )
 # %%
 # Prepare data for combined plot
 # Add decade grouping
-decades = (corrs.time.dt.year // 10) * 10
+decades = (corrs.time // 10) * 10
 
 # Count records above 0.4 for each decade
-ds_above_threshold = corrs >= 0.5
+ds_above_threshold = corrs >= 0.4
 ds_decade_count = ds_above_threshold.groupby(decades).sum(dim=["time", "ens"])
 
 # Prepare data for violin plot - flatten time and ens dimensions for each decade
@@ -82,7 +83,7 @@ ax1.set_title(
 )
 ax1.grid(True, alpha=0.3, axis="y")
 # add horizontal line at 0.5
-ax1.axhline(0.5, color="red", linestyle="dotted", linewidth=1)
+ax1.axhline(0.4, color="red", linestyle="dotted", linewidth=1)
 
 # Second row: Count above 0.4
 ds_decade_count.plot(ax=ax2, marker="o", linewidth=2, markersize=8)
@@ -94,15 +95,15 @@ ax2.set_title(
 )
 ax2.grid(True, alpha=0.3)
 plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/violin_count_pattern_corr.png",
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/violin_count_pattern_corr_JJA.png",
     dpi=300,
 )
 
 plt.tight_layout()
 # %%
 # Find events where pattern correlation >= 0.5 for all decades between 1990s to 2040s
-threshold = 0.5
-decades = (corrs.time.dt.year // 10) * 10
+threshold = 0.4
+decades = (corrs.time // 10) * 10
 
 # Filter for decades between 1990 and 2040
 decade_mask = (decades >= 1990) & (decades <= 2040)
@@ -145,9 +146,7 @@ strongest_time = selected_times[max_corr_idx]
 strongest_ens = selected_ens[max_corr_idx]
 
 print(f"Strongest correlation: {max_corr_value:.4f}")
-print(
-    f"Strongest event: Ensemble {strongest_ens}, Time {np.datetime_as_string(strongest_time, unit='M')}"
-)
+print(f"Strongest event: Ensemble {strongest_ens}, Time {strongest_time}")
 
 # %%
 # Plot the spatial maps: average and strongest pattern
@@ -185,7 +184,7 @@ strongest_pattern.ts.plot(
 ax2.coastlines()
 ax2.gridlines(draw_labels=True, alpha=0.3)
 ax2.set_title(
-    f"Strongest Pattern (Corr={max_corr_value:.3f})\n(Ens {strongest_ens}, Time: {np.datetime_as_string(strongest_time, unit='M')})",
+    f"Strongest Pattern (Corr={max_corr_value:.3f})\n(Ens {strongest_ens}, Time: {strongest_time})",
     fontsize=13,
 )
 
@@ -196,13 +195,13 @@ plt.suptitle(
 )
 plt.tight_layout()
 plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/first_decade_high_corr_patterns.png",
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/first_decade_high_corr_patterns_JJA.png",
     dpi=300,
 )
 # %%
 # Plot all individual events
 n_events = len(selected_events)
-ncols = min(4, n_events)  # Maximum 4 columns
+ncols = min(8, n_events)  # Maximum 8 columns
 nrows = int(np.ceil(n_events / ncols))
 
 fig, axes = plt.subplots(
@@ -235,7 +234,7 @@ for i in range(n_events):
     ax.coastlines()
     ax.gridlines(draw_labels=False, alpha=0.3)
     ax.set_title(
-        f"Event {i+1}: Corr={selected_corr_values[i]:.3f}\nEns {selected_ens[i]}, {np.datetime_as_string(selected_times[i], unit='M')}",
+        f"Event {i+1}: Corr={selected_corr_values[i]:.3f}\nEns {selected_ens[i]}, {selected_times[i]}",
         fontsize=11,
     )
 
@@ -246,7 +245,7 @@ for i in range(n_events, len(axes)):
 # Add a single colorbar for all subplots
 cbar = fig.colorbar(
     im,
-    ax=axes[10:],
+    ax=axes[-3:],
     label="SST Anomaly (K)",
     shrink=0.8,
     pad=0.02,
@@ -259,9 +258,79 @@ plt.suptitle(
     y=0.995,
 )
 plt.tight_layout()
-plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/all_high_corr_events.png",
-    dpi=300,
-    bbox_inches="tight",
+# plt.savefig(
+#     "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/all_high_corr_events_JJA.png",
+#     dpi=300,
+#     bbox_inches="tight",
+# )
+# %%
+# Plot all individual events with spatial mean removed
+n_events = len(selected_events)
+ncols = min(8, n_events)  # Maximum 8 columns
+nrows = int(np.ceil(n_events / ncols))
+
+fig, axes = plt.subplots(
+    nrows,
+    ncols,
+    figsize=(5 * ncols, 4 * nrows),
+    subplot_kw={"projection": ccrs.PlateCarree()},
 )
+
+# Flatten axes array for easy iteration
+if n_events == 1:
+    axes = [axes]
+elif nrows == 1:
+    axes = axes
+else:
+    axes = axes.flatten()
+
+# Plot each event with spatial mean removed
+for i in range(n_events):
+    ax = axes[i]
+    # Compute spatial mean and subtract it
+    event_data = selected_events[i].ts
+    spatial_mean = event_data.mean(dim=["lat", "lon"])
+    spatial_anomaly = event_data - spatial_mean
+
+    im = spatial_anomaly.plot(
+        ax=ax,
+        transform=ccrs.PlateCarree(),
+        levels=np.linspace(-2, 2, 21),
+        cmap="RdBu_r",
+        center=0,
+        add_colorbar=False,
+        extend="both",
+    )
+    ax.coastlines()
+    ax.gridlines(draw_labels=False, alpha=0.3)
+    ax.set_title(
+        f"Event {i+1}: Corr={selected_corr_values[i]:.3f}\nEns {selected_ens[i]}, {selected_times[i]}",
+        fontsize=11,
+    )
+
+# Hide any unused subplots
+for i in range(n_events, len(axes)):
+    axes[i].set_visible(False)
+
+# Add a single colorbar for all subplots
+cbar = fig.colorbar(
+    im,
+    ax=axes[-3:],
+    label="SST Spatial Anomaly (K)",
+    shrink=0.8,
+    pad=0.02,
+    orientation="horizontal",
+)
+
+plt.suptitle(
+    f"All {n_events} Events (Spatial Mean Removed) with Pattern Correlation >= {threshold} (1990s-2040s)",
+    fontsize=15,
+    y=0.995,
+)
+plt.tight_layout()
+# plt.savefig(
+#     "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/all_high_corr_events_spatial_anomaly_JJA.png",
+#     dpi=300,
+#     bbox_inches="tight",
+# )
 # %%
