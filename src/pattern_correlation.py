@@ -49,7 +49,7 @@ def calculate_spatial_correlation(field1, field2):
     return correlation
 
 
-def calculate_spatial_correlation_no_glm(
+def calculate_spatial_correlation_keepareamean(
     field1,
     field2,
     *,
@@ -156,7 +156,7 @@ def spatial_corr_model_era(model_data, era_data, rm_spatial_mean=True):
         if rm_spatial_mean:
             corr_t = calculate_spatial_correlation(model_slice, era_data)
         else:
-            corr_t = calculate_spatial_correlation_no_glm(model_slice, era_data)
+            corr_t = calculate_spatial_correlation_keepareamean(model_slice, era_data)
         correlations.append(corr_t)
 
     # Combine into DataArray with time coordinate
