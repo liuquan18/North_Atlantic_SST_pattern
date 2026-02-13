@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import xarray as xr
 
@@ -51,7 +49,89 @@ def calculate_spatial_correlation(field1, field2):
     return correlation
 
 
-def spatial_corr_model_era(model_data, era_data):
+def calculate_spatial_correlation_no_glm(
+    field1,
+    field2,
+    *,
+    lat_dim="lat",
+    time_dim="time",
+    area_weighted=True,
+):
+    """
+    Calculate spatial pattern correlation without removing spatial mean.
+
+    This computes an uncentered (cosine-like) pattern correlation:
+    sum(w * x * y) / sqrt(sum(w * x^2) * sum(w * y^2))
+
+    Parameters
+    ----------
+    field1 : xarray.DataArray
+        First spatial field.
+    field2 : xarray.DataArray
+        Second spatial field.
+    lat_dim : str, optional
+        Latitude dimension name, by default "lat".
+    time_dim : str, optional
+        Time dimension name to exclude from spatial flattening, by default "time".
+    area_weighted : bool, optional
+        If True, apply cosine(latitude) area weighting, by default True.
+
+    Returns
+    -------
+    xarray.DataArray
+        Uncentered spatial pattern correlation. If input has a time dimension,
+        returns a time series.
+    """
+    if not isinstance(field1, xr.DataArray) or not isinstance(field2, xr.DataArray):
+        raise TypeError("field1 and field2 must be xarray.DataArray objects")
+
+    field1, field2 = xr.align(field1, field2, join="exact")
+
+    spatial_dims = [dim for dim in field2.dims if dim != time_dim]
+    if len(spatial_dims) == 0:
+        raise ValueError("No spatial dimensions found to compute pattern correlation")
+
+    field1_flat = field1.stack(space=spatial_dims)
+    field2_flat = field2.stack(space=spatial_dims)
+
+    valid_mask = ~(field1_flat.isnull() | field2_flat.isnull())
+    field1_valid = field1_flat.where(valid_mask)
+    field2_valid = field2_flat.where(valid_mask)
+
+    if area_weighted:
+        if lat_dim not in spatial_dims:
+            raise ValueError(
+                f"Latitude dimension '{lat_dim}' not found in spatial dims {spatial_dims}"
+            )
+
+        lat_weights = np.cos(np.deg2rad(field2[lat_dim]))
+        lat_weights.name = "weights"
+
+        spatial_template = (
+            field2.isel({time_dim: 0}) if time_dim in field2.dims else field2
+        )
+        weights = lat_weights * xr.ones_like(spatial_template)
+    else:
+        spatial_template = (
+            field2.isel({time_dim: 0}) if time_dim in field2.dims else field2
+        )
+        weights = xr.ones_like(spatial_template)
+
+    weights_flat = weights.stack(space=spatial_dims).where(valid_mask)
+
+    numerator = (weights_flat * field1_valid * field2_valid).sum(
+        dim="space", skipna=True
+    )
+    denominator = np.sqrt(
+        (weights_flat * field1_valid**2).sum(dim="space", skipna=True)
+        * (weights_flat * field2_valid**2).sum(dim="space", skipna=True)
+    )
+
+    correlation = numerator / denominator
+    return correlation.where(denominator > 0)
+
+
+def spatial_corr_model_era(model_data, era_data, rm_spatial_mean=True):
     """
     Calculate spatial correlation between model data (with time) and ERA5 data (single time).
 
@@ -73,7 +153,10 @@ def spatial_corr_model_era(model_data, era_data):
     correlations = []
     for t in range(len(model_data.time)):
         model_slice = model_data.isel(time=t)
-        corr_t = calculate_spatial_correlation(era_data, model_slice)
+        if rm_spatial_mean:
+            corr_t = calculate_spatial_correlation(model_slice, era_data)
+        else:
+            corr_t = calculate_spatial_correlation_no_glm(model_slice, era_data)
         correlations.append(corr_t)
 
     # Combine into DataArray with time coordinate
