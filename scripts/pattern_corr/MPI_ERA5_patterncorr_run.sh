@@ -21,4 +21,5 @@ conda activate north_atlantic_sst
 export I_MPI_PMI_LIBRARY=/usr/lib64/libpmi2.so
 
 # Launch MPI job directly - let SLURM auto-detect MPI interface
-srun python MPI_ERA5_patterncorr.py
+# srun python MPI_ERA5_patterncorr.py
+srun python MPI_ERA5_patterncorr_rmglm.py
