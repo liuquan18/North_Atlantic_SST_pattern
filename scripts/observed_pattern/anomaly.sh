@@ -35,13 +35,7 @@ echo "=========================================="
 
 
 # climatology calculations
-cdo -r -f nc -sellonlatbox,280,360,0,70 -remapbil,$target_grid -setgridtype,regular -ymonmean -selmon,6,7,8 -mergetime $clim_files ${clim_dir}/clim_nalt_1991_06-2020_08.nc
-
-
-# 4. JJA Climatology
-echo "Calculating JJA Climatology..."
-cdo -r -f nc -sellonlatbox,280,360,0,70 -remapbil,$target_grid -setgridtype,regular -timmean -selmon,6,7,8 -mergetime $clim_files "${clim_dir}/clim_jja.nc"
-
+cdo -r -f nc -remapbil,$target_grid -setgridtype,regular -ymonmean -selmon,6,7,8 -mergetime $clim_files ${clim_dir}/clim_nalt_1991_06-2020_08.nc
 
 echo "=========================================="
 echo "Calculating Anomalies for 2023"
@@ -57,9 +51,13 @@ fi
 
 echo "Calculating 2023 Anomaly..."
 
-cdo -r -f nc -ymonsub -selmon,6,7,8 -remapbil,$target_grid -sellonlatbox,280,360,0,70 -setgridtype,regular "$file_2023" "${clim_dir}/clim_nalt_1991_06-2020_08.nc" "${anom_dir}/anom_2023_06_2023_08.nc"
+cdo -r -f nc -ymonsub -selmon,6,7,8 -remapbil,$target_grid -setgridtype,regular "$file_2023" "${clim_dir}/clim_nalt_1991_06-2020_08.nc" "${anom_dir}/anom_2023_06_2023_08.nc"
 
 
 # 4. JJA Anomaly
 echo "Calculating JJA Anomaly for 2023..."
 cdo -r -f nc -timmean "${anom_dir}/anom_2023_06_2023_08.nc" "${anom_dir}/anom_2023_jja.nc"
+
+# remove global mean and select region
+echo "Removing global mean and selecting North Atlantic region..."
+cdo -r -f nc -sellonlatbox,280,360,0,70 -sub "${anom_dir}/anom_2023_jja.nc" -enlarge,"${anom_dir}/anom_2023_jja.nc" -fldmean "${anom_dir}/anom_2023_jja.nc" "${anom_dir}/anom_2023_jja_rm_glbm.nc"
