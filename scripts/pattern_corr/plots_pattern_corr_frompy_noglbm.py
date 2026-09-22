@@ -7,7 +7,9 @@ import cartopy.crs as ccrs
 
 # %%
 # Read pattern correlation data with proper ensemble indexing
-base_dir = "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr_JJA/"
+base_dir = (
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_corr_JJA_noglm/"
+)
 corr_files = sorted(glob.glob(base_dir + "mpi_era5_patterncorr_ens*.nc"))
 # Extract ensemble numbers from filenames
 corr_ens_nums = [int(f.split("ens")[1].split(".nc")[0]) for f in corr_files]
@@ -20,7 +22,7 @@ corrs["ens"] = corr_ens_nums
 # %%
 # Read anomaly data with proper ensemble indexing
 
-anom_dir = "/scratch/m/m300883/nalt/MPI_GE_CMIP6/anomaly/"
+anom_dir = "/scratch/m/m300883/nalt/MPI_GE_CMIP6/removed_glbm/"
 anom_data = []
 for ens_num in corr_ens_nums:
     ens_dir = f"{anom_dir}r{ens_num}i1p1f1/"
@@ -40,16 +42,18 @@ ds_year.plot(ax=ax)
 ax.set_title("Pattern Correlation average over all ensemble members (JJA)")
 ax.set_ylabel("Pattern Correlation (JJA)")
 plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/pattern_corr_avg_ens_JJA.png",
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/pattern_corr_avg_ens_JJA_noglbm.png",
     dpi=300,
 )
 # %%
+threshold = 0.4
+
 # Prepare data for combined plot
 # Add decade grouping
 decades = (corrs.time // 10) * 10
 
 # Count records above 0.4 for each decade
-ds_above_threshold = corrs >= 0.4
+ds_above_threshold = corrs >= threshold
 ds_decade_count = ds_above_threshold.groupby(decades).sum(dim=["time", "ens"])
 
 # Prepare data for violin plot - flatten time and ens dimensions for each decade
@@ -83,31 +87,27 @@ ax1.set_title(
 )
 ax1.grid(True, alpha=0.3, axis="y")
 # add horizontal line at 0.5
-ax1.axhline(0.4, color="red", linestyle="dotted", linewidth=1)
+ax1.axhline(threshold, color="red", linestyle="dotted", linewidth=1)
 
-# Second row: Count above 0.4
+# Second row: Count above 0.5
 ds_decade_count.plot(ax=ax2, marker="o", linewidth=2, markersize=8)
 ax2.set_xlabel("Decade", fontsize=12)
-ax2.set_ylabel("Count of Records Above 0.5", fontsize=12)
+ax2.set_ylabel(f"Count of Records Above {threshold}", fontsize=12)
 ax2.set_title(
-    "Count of Pattern Correlation Records Above 0.5 by Decade",
+    f"Count of Pattern Correlation Records Above {threshold} by Decade",
     fontsize=13,
 )
 ax2.grid(True, alpha=0.3)
 plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/violin_count_pattern_corr_JJA.png",
+    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/violin_count_pattern_corr_JJA_noglbm.png",
     dpi=300,
 )
 
 plt.tight_layout()
 # %%
-# Find events where pattern correlation >= 0.5 for all decades between 1990s to 2040s
-threshold = 0.4
-decades = (corrs.time // 10) * 10
-
-# Filter for decades between 1990 and 2040
-decade_mask = (decades >= 1990) & (decades <= 2040)
-corr_filtered = corrs.where(decade_mask, drop=True)
+# Find events where pattern correlation >= threshold for years 1990-2024
+year_mask = (corrs.time >= 1990) & (corrs.time <= 2024)
+corr_filtered = corrs.where(year_mask, drop=True)
 
 # Find where correlation >= threshold using index-based method
 high_corr_mask = corr_filtered >= threshold
@@ -116,7 +116,7 @@ high_corr_mask = corr_filtered >= threshold
 ens_indices, time_indices = np.where(high_corr_mask.values)
 
 print(
-    f"Found {len(ens_indices)} events in decades 1990s-2040s with pattern correlation >= {threshold}"
+    f"Found {len(ens_indices)} events in years 1990-2024 with pattern correlation >= {threshold}"
 )
 
 # %%
@@ -125,6 +125,12 @@ print(
 selected_times = corr_filtered.time.values[time_indices]
 selected_ens = corr_filtered.ens.values[ens_indices]
 selected_corr_values = corr_filtered.values[ens_indices, time_indices]
+
+# Sort selected events by correlation (highest first)
+sort_idx = np.argsort(selected_corr_values)[::-1]
+selected_times = selected_times[sort_idx]
+selected_ens = selected_ens[sort_idx]
+selected_corr_values = selected_corr_values[sort_idx]
 
 # Stack selections to create a multi-index selection
 # Use xr.concat to gather all events efficiently
@@ -167,7 +173,7 @@ avg_pattern.ts.plot(
 ax1.coastlines()
 ax1.gridlines(draw_labels=True, alpha=0.3)
 ax1.set_title(
-    f"Average Pattern\n(N={len(ens_indices)} events, 1990s-2040s)",
+    f"Average Pattern\n(N={len(ens_indices)} events, 1990-2024)",
     fontsize=13,
 )
 
@@ -189,18 +195,19 @@ ax2.set_title(
 )
 
 plt.suptitle(
-    f"SST Anomaly Patterns for Pattern Correlation >= {threshold} (1990s-2040s)",
+    f"SST Anomaly Patterns for Pattern Correlation >= {threshold} (1990-2024)",
     fontsize=15,
     y=1.02,
 )
 plt.tight_layout()
-plt.savefig(
-    "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/first_decade_high_corr_patterns_JJA.png",
-    dpi=300,
-)
+# plt.savefig(
+#     "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/first_decade_high_corr_patterns_JJA.png",
+#     dpi=300,
+# )
 # %%
 # Plot all individual events
-n_events = len(selected_events)
+max_events_to_plot = 32
+n_events = min(max_events_to_plot, len(selected_events))
 ncols = min(8, n_events)  # Maximum 8 columns
 nrows = int(np.ceil(n_events / ncols))
 
@@ -253,7 +260,7 @@ cbar = fig.colorbar(
 )
 
 plt.suptitle(
-    f"All {n_events} Events with Pattern Correlation >= {threshold} (1990s-2040s)",
+    f"All {n_events} Events with Pattern Correlation >= {threshold} (1990-2024)",
     fontsize=15,
     y=0.995,
 )
@@ -263,74 +270,3 @@ plt.tight_layout()
 #     dpi=300,
 #     bbox_inches="tight",
 # )
-# %%
-# Plot all individual events with spatial mean removed
-n_events = len(selected_events)
-ncols = min(8, n_events)  # Maximum 8 columns
-nrows = int(np.ceil(n_events / ncols))
-
-fig, axes = plt.subplots(
-    nrows,
-    ncols,
-    figsize=(5 * ncols, 4 * nrows),
-    subplot_kw={"projection": ccrs.PlateCarree()},
-)
-
-# Flatten axes array for easy iteration
-if n_events == 1:
-    axes = [axes]
-elif nrows == 1:
-    axes = axes
-else:
-    axes = axes.flatten()
-
-# Plot each event with spatial mean removed
-for i in range(n_events):
-    ax = axes[i]
-    # Compute spatial mean and subtract it
-    event_data = selected_events[i].ts
-    spatial_mean = event_data.mean(dim=["lat", "lon"])
-    spatial_anomaly = event_data - spatial_mean
-
-    im = spatial_anomaly.plot(
-        ax=ax,
-        transform=ccrs.PlateCarree(),
-        levels=np.linspace(-2, 2, 21),
-        cmap="RdBu_r",
-        center=0,
-        add_colorbar=False,
-        extend="both",
-    )
-    ax.coastlines()
-    ax.gridlines(draw_labels=False, alpha=0.3)
-    ax.set_title(
-        f"Event {i+1}: Corr={selected_corr_values[i]:.3f}\nEns {selected_ens[i]}, {selected_times[i]}",
-        fontsize=11,
-    )
-
-# Hide any unused subplots
-for i in range(n_events, len(axes)):
-    axes[i].set_visible(False)
-
-# Add a single colorbar for all subplots
-cbar = fig.colorbar(
-    im,
-    ax=axes[-3:],
-    label="SST Spatial Anomaly (K)",
-    shrink=0.8,
-    pad=0.02,
-    orientation="horizontal",
-)
-
-plt.suptitle(
-    f"All {n_events} Events (Spatial Mean Removed) with Pattern Correlation >= {threshold} (1990s-2040s)",
-    fontsize=15,
-    y=0.995,
-)
-plt.tight_layout()
-# plt.savefig(
-#     "/work/mh0033/m300883/North_Atlantic_SST_pattern/figures/all_high_corr_events_spatial_anomaly_JJA.png",
-#     dpi=300,
-#     bbox_inches="tight",
-# )
-# %%
