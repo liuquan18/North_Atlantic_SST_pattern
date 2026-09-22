@@ -15,8 +15,9 @@ mkdir -p "$anom_dir"
 # Load CDO
 module load cdo/2.5.0-gcc-11.2.0
 
-# Target grid for remapping
-target_grid="/scratch/m/m300883/nalt/MPI_GE_CMIP6/anomaly/r1i1p1f1/ts_Amon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_199001-200912.nc"
+# Target grid for remapping (permanent archive copy -- the scratch copy
+# this used to point to has since been purged; see CLAUDE.md)
+target_grid="/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical/r1i1p1f1/Amon/ts/gn/v20190710/ts_Amon_MPI-ESM1-2-LR_historical_r1i1p1f1_gn_185001-186912.nc"
 
 # Define the climatology period
 start_year=1991
