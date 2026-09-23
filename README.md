@@ -1,6 +1,19 @@
 # North Atlantic SST Pattern Analysis
 
-This project compares the pattern correlation between the SST pattern in JJA (June-July-August) 2023 with the SST pattern in MPI_GE (Max Planck Institute Grand Ensemble). All data, in monthly time scales, are available on Levante.
+This project compares an observed summer (JJA) North Atlantic sea surface
+temperature pattern against climate simulations, by spatial pattern
+correlation. All data are on Levante.
+
+Two studies live here:
+
+- **JJA 2026, North Atlantic + Mediterranean** (current) — 30–60°N, 80°W–40°E,
+  scored against MPI-GE, **km-scale ICON (EPOC, 10 km atm / 5 km ocean)** and
+  **EERIE ICON-ESM-ER**. Sea surface temperature only (`tos` / `to`); no `ts`
+  or `tas`. Pipeline, data traps and methodology:
+  **[scripts/pattern_2026/README.md](scripts/pattern_2026/README.md)**.
+  Outputs in `data/pattern_2026/` and `figures/pattern_2026/`.
+- **JJA 2023, North Atlantic** (original) — 0–70°N, 80°W–0°, MPI-GE only.
+  Scripts in `scripts/pattern_corr/`, helpers in `src/pattern_correlation.py`.
 
 ## Project Structure
 
