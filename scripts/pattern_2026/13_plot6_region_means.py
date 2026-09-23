@@ -9,9 +9,11 @@ something the reader has to infer by comparing tick labels between panels.
 box = natl + med exactly, so the middle two panels decompose the first rather
 than repeating it.
 
-MPI-GE is a 50-member ensemble: the band is the 5-95% spread across members and
-the line is the ensemble mean, so its forced response can be told apart from the
-internal variability that the single-realisation records also contain.
+Two of the sources are ensembles, and their bands are built differently on
+purpose: MPI-GE has 50 members, enough for a 5-95% spread, while MPI-ESM1.2-ER
+has 3, where the honest summary is the range the three realizations span. In
+both cases the line is the ensemble mean, so the forced response can be told
+apart from the internal variability the single-realisation records also carry.
 """
 import sys
 
@@ -51,12 +53,12 @@ def main():
             color, ls = vz.COLORS[k], vz.LINESTYLES[k]
             label = p2.DATASETS[k].label
 
-            if "member" in da.dims:
-                ax.fill_between(da.year, da.quantile(0.05, "member"),
-                                da.quantile(0.95, "member"), color=color,
-                                alpha=0.20, lw=0, zorder=2,
-                                label=f"{label} (5–95% of members)")
-                ax.plot(da.year, da.mean("member"), color=color, lw=1.5, ls=ls,
+            mdim = p2.member_dim(da)
+            if mdim:
+                lo, hi, band_label = vz.member_band(da, mdim)
+                ax.fill_between(da.year, lo, hi, color=color, alpha=0.20, lw=0,
+                                zorder=2, label=f"{label} ({band_label})")
+                ax.plot(da.year, da.mean(mdim), color=color, lw=1.5, ls=ls,
                         zorder=3, label=f"{label} (ensemble mean)")
             else:
                 ax.plot(da.year, da, color=color, lw=1.4, ls=ls, zorder=4,

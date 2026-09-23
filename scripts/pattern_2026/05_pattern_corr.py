@@ -120,7 +120,13 @@ def main():
                              best_member=int(r26["member"][int(r26.argmax())]))
             summary.setdefault("nominal_2026", {}).setdefault(k, []).append(entry)
 
-        ds_out = xr.Dataset(corrs)
+        # each ensemble gets its own member dimension: a shared "member" would
+        # align MPI-GE's 50 and MPI-ESM1.2-ER's 3 onto one index and pad the
+        # smaller with NaN (see src.pattern_2026.member_dim)
+        ds_out = xr.Dataset({
+            k: (v.rename({"member": f"member_{k}"}) if "member" in v.dims else v)
+            for k, v in corrs.items()
+        })
         ds_out.attrs.update(variant=variant, description=vinfo["long"],
                             reference=f"ERA5 JJA {p2.REF_YEAR}",
                             region=str(p2.REGION))

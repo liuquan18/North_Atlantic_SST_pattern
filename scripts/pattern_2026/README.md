@@ -25,6 +25,7 @@ sbatch scripts/pattern_2026/01_era5.sh        # observations, 1940-2026
 sbatch scripts/pattern_2026/02_mpige.sh       # MPI-ESM1-2-LR, 50 members
 sbatch scripts/pattern_2026/03_epoc_icon.sh   # km-scale ICON (EPOC), 2 experiments
 sbatch scripts/pattern_2026/04_eerie.sh       # EERIE ICON-ESM-ER, 2 experiments
+sbatch scripts/pattern_2026/14_mpi_er.sh     # MPI-ESM1.2-ER, 3 realizations
 sbatch scripts/pattern_2026/10_kmscale_zoom.sh  # zoom data for figure 5 (needs 03)
 
 # then the analysis and all five figures (handles the conda env itself):
@@ -66,20 +67,32 @@ threshold.
 
 **Best analogue each simulation can produce** (spatial-mean-removed variant):
 
-| simulation | seasons available | best season | r |
-|---|---|---|---|
-| MPI-ESM1-2-LR grand ensemble | 12,550 | JJA 2016, member r24 | **+0.67** |
-| km-scale ICON (EPOC, transient GHG) | 35 | JJA 2002 | +0.59 |
-| km-scale ICON (EPOC, control) | 35 | JJA 2005 | +0.53 |
-| EERIE ICON-ESM-ER (hist+ssp245) | 101 | JJA 2039 | +0.50 |
-| EERIE ICON-ESM-ER (control) | 101 | JJA 2041 | +0.61 |
+| simulation | ocean | seasons available | best season | r |
+|---|---|---|---|---|
+| MPI-ESM1-2-LR grand ensemble | ~1° | 12,550 | JJA 2016, member r24 | **+0.67** |
+| MPI-ESM1.2-ER | ~10 km | 450 | JJA 2038, member r2 | +0.60 |
+| km-scale ICON (EPOC, transient GHG) | 5 km | 35 | JJA 2002 | +0.59 |
+| km-scale ICON (EPOC, control) | 5 km | 35 | JJA 2005 | +0.53 |
+| EERIE ICON-ESM-ER (hist+ssp245) | 5 km, archived 0.25° | 101 | JJA 2039 | +0.50 |
+| EERIE ICON-ESM-ER (control) | 5 km, archived 0.25° | 101 | JJA 2041 | +0.61 |
 
 **The raw ranking is an artefact of sample size.** MPI-GE gets 12,550 draws at a
-good analogue; the km-scale runs get 35. Drawing 35 MPI-GE seasons at random
-gives a best-of-35 of r = +0.40 (5–95%: +0.27 to +0.53), so the km-scale run's
-+0.59 out of its own 35 seasons sits above MPI-GE's 95th percentile. Per season
-simulated, the km-scale run gets closer to the observed 2026 pattern than
-MPI-GE does.
+good analogue; MPI-ESM1.2-ER gets 450 and the km-scale ICON run gets 35.
+Equalising to 35 draws (`best_of_n_bootstrap.csv`):
+
+| | best-of-35 | 5–95% |
+|---|---|---|
+| MPI-ESM1-2-LR (~1° ocean) | +0.39 | +0.27 to +0.53 |
+| MPI-ESM1.2-ER (~10 km ocean) | +0.46 | +0.31 to +0.60 |
+| km-scale ICON (EPOC, 5 km) | +0.59 (its actual best of 35) | — |
+
+**Ocean resolution helps, and the cleanest evidence is the MPI pair.** MPI-GE
+and MPI-ESM1.2-ER are the same model family differing mainly in ocean
+resolution (~1° vs ~10 km), and the finer one reaches +0.46 against +0.39 on
+equal sampling. The km-scale ICON run's +0.59 out of its own 35 seasons sits
+above MPI-GE's 95th percentile. The ordering is not monotonic in resolution
+overall — EERIE is lowest at +0.35 — but EERIE is only archived at 0.25°, so
+what is scored there is not its 5 km field.
 
 *Caveat on `best_of_n_bootstrap.csv`:* resampling is with replacement, so for a
 dataset whose record is already only 35 seasons the "best-of-35" estimate is
@@ -89,8 +102,8 @@ the bootstrap as a **reference distribution from the large-sample datasets**
 against it, as above.
 
 **A 2026-like pattern is rare everywhere.** Measured against the observed 2003
-analogue, only **1 of 12,550** MPI-GE seasons reaches it, and **0 of 35** (EPOC)
-and **0 of 101** (EERIE) (figure 3).
+analogue, only **1 of 12,550** MPI-GE seasons reaches it — and **0 of 450**
+(MPI-ESM1.2-ER), **0 of 35** (EPOC) and **0 of 101** (EERIE) (figure 3).
 
 **It looks like internal variability, not a forced signal.** The constant-forcing
 control runs do as well as their forced counterparts — EERIE control +0.61 vs
@@ -99,6 +112,12 @@ greenhouse-gas forcing is generating this pattern. Consistently, each model's
 own nominal JJA 2026 is unremarkable (MPI-GE best member +0.54, 50-member mean
 +0.13; EERIE +0.21), confirming that in free-running simulations the calendar
 year carries no forecast meaning.
+
+**Figures show one pattern variant.** Removing the box mean and removing the
+global mean give near-identical correlations (differences of <0.01 in r
+throughout), because JJA 2026's basin-mean warmth is almost all the global
+signal. Figures 1–3 therefore show only the box-mean-removed variant; both are
+still computed and stored.
 
 **Regional means (figure 6).** Area-mean JJA anomalies for four regions, where
 `box = natl + med` exactly. Observed JJA 2026: global ocean **+0.56 °C**,
@@ -115,8 +134,17 @@ record):
 |---|---|---|---|---|
 | ERA5 (1940–2026) | +0.085 | +0.123 | +0.111 | **+0.174** |
 | MPI-GE (1850–2100) | +0.074 | +0.087 | +0.083 | +0.104 |
+| MPI-ESM1.2-ER (1950–2099, ssp585) | +0.194 | +0.233 | +0.218 | +0.301 |
 | EERIE (1950–2050) | +0.125 | +0.192 | +0.180 | +0.244 |
 | km-scale ICON (1990–2024) | +0.130 | +0.358 | +0.330 | +0.482 |
+
+Absolute trends are not comparable across these rows — the records cover
+different periods and scenarios (ssp245 for MPI-GE and EERIE, ssp585 for
+MPI-ESM1.2-ER and EPOC). The comparable quantity is the **Mediterranean
+amplification**, the ratio of the Mediterranean trend to the global one:
+observed **2.05**, MPI-GE 1.40, MPI-ESM1.2-ER 1.55, EERIE 1.95, EPOC 3.71 (over
+35 years only). Every model but EPOC under-does the observed amplification, and
+here too the finer MPI ocean is closer than the coarse one.
 
 MPI-ESM1-2-LR warms the Mediterranean at only ~1.4× its global rate against
 ~2.0× observed, which is consistent with the cold Mediterranean bias visible in
@@ -178,6 +206,19 @@ held at 1850, which is what the `_aerosols` build name refers to.
 Coverage: `epoc2_010` 1990–2024; `epoc2_020` runs to 2025-07, so its last
 complete JJA is 2024. Neither has JJA 2026.
 
+**MPI-ESM1.2-ER** T127 atmosphere (~100 km) + the eddy-resolving MPIOM TP6M
+ocean (3602×2394 curvilinear, ~0.1° / ~10 km) — the same model family as MPI-GE
+but with a ~10× finer ocean, so the pair isolates ocean resolution within one
+model. Three realizations under
+`/work/uo0122/u241089/MPIESM/{ER,ER3,ER5}-{hist,ssp585}/outdata/mpiom/`
+(ER = member 1, ER3 = 2, ER5 = 3), historical 1950–2014 + ssp585 2015–2099, one
+~2.2 GB year-file each. Traps are mild next to EPOC: the variable is lowercase
+**`tos`** (the readme says `TOS`, and `-selname,TOS` aborts), and the real cost
+is decompression — ~10 s to pull JJA out of a year-file, so the extracted field
+is written once and reused for both the remap and the global mean. Monthly means
+are stamped at the *end* of their month, which for `-selmon` is already correct.
+`/work/mh1421/data/mpiesm/` holds only the hist legs, so use the `uo0122` path.
+
 **EERIE ICON-ESM-ER** 10 km atmosphere / 5 km ocean, CMORized `Omon/tos` on a
 0.25° regular `gr` grid — no unstructured handling needed.
 `hist-1950` (1950–2014) + `highres-future-ssp245` (2015–2050) under
@@ -189,7 +230,11 @@ that explicit.
 
 ## Methodology notes
 
-**Two pattern definitions**, carried through every figure, matching the 2023 work:
+**Two pattern definitions** are computed and stored, matching the 2023 work.
+They turn out to give near-identical correlations here, so the figures draw only
+the first; `results/corr_global.nc` and `best_analogues.csv` keep both, and
+`src.pattern_2026.PLOT_VARIANTS` controls what is drawn.
+
 
 - *spatial mean removed* — subtract the area-weighted mean over the box from
   both fields, then correlate (centred Pearson correlation over space). A pure

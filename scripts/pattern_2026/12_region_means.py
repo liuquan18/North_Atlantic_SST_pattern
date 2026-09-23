@@ -48,7 +48,12 @@ def main():
         for region, m in masks.items():
             series[f"{k}|{region}"] = p2.area_mean(coarse, m)
 
-    ds = xr.Dataset(series)
+    # per-ensemble member dimension; see src.pattern_2026.member_dim
+    ds = xr.Dataset({
+        name: (da.rename({"member": f"member_{name.split('|')[0]}"})
+               if "member" in da.dims else da)
+        for name, da in series.items()
+    })
     ds.attrs["description"] = ("area-weighted JJA SST anomaly (degC, 1991-2020 base); "
                                "variable names are '<dataset>|<region>'")
     ds.to_netcdf(OUT)
@@ -66,7 +71,8 @@ def main():
             p95_1991_2020=round(float(da.sel(year=slice(*p2.CLIM_PERIOD)).quantile(0.95)), 3),
             trend_per_decade=round(float(
                 np.polyfit(da.year.values,
-                           da.mean("member").values if "member" in da.dims else da.values,
+                           da.mean(p2.member_dim(da)).values
+                           if p2.member_dim(da) else da.values,
                            1)[0] * 10), 4),
         ))
     df = pd.DataFrame(rows)

@@ -24,8 +24,8 @@ sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 
-COLS = p2.MAIN_KEYS                      # ERA5, MPI-GE, ICON-EPOC-hist, EERIE
-ROWS = ["spatial", "global"]
+COLS = p2.MAIN_KEYS       # ERA5, MPI-GE, MPI-ER, ICON-EPOC, EERIE
+ROWS = p2.PLOT_VARIANTS   # the global-mean-removed row is no longer drawn
 VMAX_CAP = 2.0
 
 
@@ -73,9 +73,9 @@ def main():
     proj = vz.map_projection()
 
     # size the grid so the fixed map aspect leaves no dead space
-    panel_w = 3.55
+    panel_w = 3.6
     panel_h = panel_w / vz.panel_aspect()
-    fig_w = panel_w * len(keys) + 1.6
+    fig_w = panel_w * len(keys) + 1.9
     fig_h = panel_h * len(ROWS) + 2.05
 
     fig = plt.figure(figsize=(fig_w, fig_h))
@@ -83,7 +83,7 @@ def main():
                   width_ratios=[1] * len(keys) + [0.035],
                   height_ratios=[1] * len(ROWS),
                   hspace=0.16, wspace=0.06,
-                  left=0.082, right=0.955,
+                  left=0.082 if len(ROWS) > 1 else 0.035, right=0.94,
                   top=1 - 1.35 / fig_h, bottom=0.42 / fig_h)
 
     for i, variant in enumerate(ROWS):
@@ -99,14 +99,15 @@ def main():
 
             vz.panel_tag(ax, season if r is None else f"{season}\nr = {r:+.2f}")
 
-            if j == 0:
+            # only worth a row label when more than one variant is drawn
+            if j == 0 and len(ROWS) > 1:
                 ax.text(-0.105, 0.5, p2.VARIANTS[variant]["title"],
                         transform=ax.transAxes, rotation=90, va="center", ha="center",
                         fontsize=9, color=vz.INK)
 
     cax = fig.add_subplot(gs[:, -1])
     cb = fig.colorbar(im, cax=cax, extend="both")
-    cb.set_label("JJA SST anomaly (°C, 1991–2020 base)", fontsize=8.2, color=vz.INK_SOFT)
+    cb.set_label("JJA SST anomaly (°C)", fontsize=8.2, color=vz.INK_SOFT)
     cb.ax.tick_params(labelsize=7.5)
     cb.outline.set_linewidth(0)
 
@@ -115,7 +116,9 @@ def main():
                  fontsize=12, color=vz.INK, y=1 - 0.30 / fig_h)
     fig.text(0.5, 1 - 0.66 / fig_h,
              "observations show JJA 2026; each model shows its best-matching season out of every "
-             "year and member simulated  ·  30–60°N, 80°W–40°E  ·  Mercator",
+             "year and member simulated  ·  "
+             f"{p2.VARIANTS[ROWS[0]]['long']}  ·  30–60°N, 80°W–40°E  ·  "
+             "anomalies against 1991–2020",
              ha="center", fontsize=8.3, color=vz.INK_SOFT)
 
     out = p2.FIG_DIR / "fig1_patterns_2026.png"

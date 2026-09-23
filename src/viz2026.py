@@ -23,6 +23,15 @@ INK_SOFT = "#52514e"
 INK_MUTED = "#8a8985"
 SURFACE = "#fcfcfb"
 
+#: Neutral grey for context marks that carry no identity of their own -- e.g.
+#: the non-highlighted members of a small ensemble, which are there to show
+#: spread, not to be told apart from one another.
+CONTEXT = "#a8a7a1"
+
+#: Below this many members, a 5-95% band is a quantile estimate of something
+#: that isn't there; draw the members instead.
+BAND_MIN_MEMBERS = 10
+
 COLORS = {
     "ERA5": INK,
     "MPI-GE": "#2a78d6",           # slot 1, blue
@@ -30,10 +39,19 @@ COLORS = {
     "ICON-EPOC-ctrl": "#eb6834",
     "EERIE": "#1baf7a",            # slot 3, aqua
     "EERIE-ctrl": "#1baf7a",
+    # Violet, not the palette's nominal 4th slot (yellow). With four model
+    # hues on one axis the documented order puts yellow beside orange, which
+    # fails the all-pairs normal-vision floor (dE 13.7 < 15); the palette notes
+    # that this trade should be undone when a 4th series appears, and undoing
+    # it is a pure re-order, not a re-step. Violet clears every all-pairs gate
+    # against the three hues already in use (worst normal-vision dE 16.3,
+    # worst CVD dE 9.2) and repaints nothing.
+    "MPI-ER": "#4a3aa7",           # violet
 }
 LINESTYLES = {
     "ERA5": "-",
     "MPI-GE": "-",
+    "MPI-ER": "-",
     "ICON-EPOC-hist": "-",
     "ICON-EPOC-ctrl": (0, (4, 2)),
     "EERIE": "-",
@@ -154,3 +172,36 @@ def panel_tag(ax, text, loc="lower left"):
             color=INK, zorder=6, linespacing=1.35,
             bbox=dict(facecolor="#ffffff", alpha=0.84, edgecolor="none",
                       boxstyle="round,pad=0.28"))
+
+
+def valid_members(da, member_dim="member"):
+    """
+    The member labels that actually carry data.
+
+    Not simply `da[member_dim].values`: a results file written before the
+    per-dataset member naming pads a 3-member ensemble out to the 50 of the
+    largest one with NaN, so the dimension length overstates the ensemble.
+    """
+    other = [d for d in da.dims if d != member_dim]
+    has = da.notnull().any(other) if other else da.notnull()
+    return [m for m, ok in zip(da[member_dim].values, has.values) if bool(ok)]
+
+
+def member_band(da, member_dim="member"):
+    """
+    (lower, upper, label) for an ensemble's spread.
+
+    A 5-95% quantile band is only meaningful with enough members to have tails.
+    MPI-GE has 50 and gets one; MPI-ESM1.2-ER has 3, where the honest summary is
+    the range the three realizations actually span.
+
+    The member count is the number of members carrying data, not the length of
+    the dimension: a file written before the per-dataset member naming can pad
+    a 3-member ensemble out to 50 with NaN, and reporting "50 members" then
+    would be wrong.
+    """
+    n = len(valid_members(da, member_dim))
+    if n >= BAND_MIN_MEMBERS:
+        return da.quantile(0.05, member_dim), da.quantile(0.95, member_dim), \
+            f"5–95% of {n} members"
+    return da.min(member_dim), da.max(member_dim), f"range of {n} members"

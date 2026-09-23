@@ -78,6 +78,13 @@ DATASETS = {
                 "50 members, historical + ssp245"),
         # epoc2_020: irad_co2=3 with greenhouse_ssp585.nc and bc_ozone_ssp585_<year>,
         # i.e. transient greenhouse-gas forcing -- but Kinne aerosols pinned at 1850.
+        # MPI-ESM1.2-ER: same model family as MPI-GE above, but with the
+        # eddy-resolving TP6M ocean instead of the ~1 deg one -- so the pair
+        # isolates ocean resolution within a single model.
+        Dataset("MPI-ER", "MPI-ESM1.2-ER",
+                "mpier_jja_anom_na025.nc", "mpier_jja_gmsst.nc",
+                "model", "~100 km atm / 10 km ocean", (1950, 2099),
+                "3 realizations, historical + ssp585"),
         Dataset("ICON-EPOC-hist", "km-scale ICON (EPOC, transient GHG)",
                 "epoc2_020_jja_anom_na025.nc", "epoc2_020_jja_gmsst.nc",
                 "model", "10 km atm / 5 km ocean", (1990, 2024),
@@ -98,8 +105,9 @@ DATASETS = {
     ]
 }
 
-#: The four columns of figure 1, in order.
-MAIN_KEYS = ["ERA5", "MPI-GE", "ICON-EPOC-hist", "EERIE"]
+#: The columns of figure 1, in order. MPI-ER sits next to MPI-GE so the two
+#: ocean resolutions of the same model read as a pair.
+MAIN_KEYS = ["ERA5", "MPI-GE", "MPI-ER", "ICON-EPOC-hist", "EERIE"]
 
 
 # --------------------------------------------------------------------------
@@ -249,6 +257,14 @@ def pattern_corr(field: xr.DataArray, ref: xr.DataArray, *, centered: bool,
     return (num / den).where(den > 0)
 
 
+#: Variants drawn in the figures. The analysis computes and stores both, but
+#: they give near-identical correlations here -- JJA 2026's basin-mean warmth is
+#: almost all the global signal (box +0.66 degC against a global ocean mean of
+#: +0.56), so removing the box mean and removing the global mean leave nearly
+#: the same field. The "global mean removed" numbers stay in
+#: results/corr_global.nc and best_analogues.csv.
+PLOT_VARIANTS = ["spatial"]
+
 VARIANTS = {
     "spatial": dict(centered=True,
                     title="spatial mean removed",
@@ -295,6 +311,22 @@ def region_masks(ocean_mask: xr.DataArray) -> dict[str, xr.DataArray]:
         "med": ocean_mask & in_med,
         "natl": ocean_mask & ~in_med,
     }
+
+
+def member_dim(da: xr.DataArray) -> str | None:
+    """
+    Name of the ensemble dimension of `da`, or None if it has none.
+
+    Ensembles of different size must not share a dimension *name* inside one
+    Dataset: xarray would align MPI-GE's 50 members and MPI-ESM1.2-ER's 3 onto
+    a common index, padding the smaller one to 50 with NaN and making it report
+    50 members. Writers therefore store the dimension as `member_<key>`; this
+    accepts either spelling so older files keep working.
+    """
+    for d in da.dims:
+        if d == "member" or str(d).startswith("member_"):
+            return str(d)
+    return None
 
 
 def area_mean(da: xr.DataArray, mask: xr.DataArray | None = None) -> xr.DataArray:
