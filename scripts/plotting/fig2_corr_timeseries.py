@@ -3,7 +3,7 @@ Figure 2 -- pattern correlation against observed JJA 2026, season by season,
 through every simulation (and through the observed record itself).
 
 Small multiples rather than six lines on one axis: the records cover very
-different periods (MPI-GE 1850-2100, EERIE 1950-2050, km-scale ICON 1990-2024,
+different periods (MPI-GE 1850-2100, EERIE 1950-2050, km-scale ICON 1990-2025,
 ERA5 1940-2026), so overlaying them would make the x-axis unreadable and force
 a six-way colour cycle. One row per simulation on a shared time axis keeps each
 record legible and still lets the eye compare heights down the column.

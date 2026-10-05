@@ -86,7 +86,7 @@ DATASETS = {
                 "3 realizations, historical + ssp585"),
         Dataset("ICON-EPOC-hist", "km-scale ICON (EPOC, transient GHG)",
                 "epoc2_020_jja_anom_na025.nc", "epoc2_020_jja_gmsst.nc",
-                "model", "10 km atm / 5 km ocean", (1990, 2024),
+                "model", "10 km atm / 5 km ocean", (1990, 2025),
                 "historical + SSP5-8.5 greenhouse gases, aerosols held at 1850"),
         # epoc2_010: irad_co2=2 with aerosols and ozone pinned at 1990 -- a
         # constant-forcing control, not a historical run.

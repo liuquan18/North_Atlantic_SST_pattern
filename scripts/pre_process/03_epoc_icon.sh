@@ -10,7 +10,7 @@
 #
 # km-scale ICON (EPOC): 10 km atmosphere / 5 km ocean coupled runs.
 #   epoc2_010  control,              1990-2024
-#   epoc2_020  historical + ssp585,  1990-2025  <- the "ICON-historical" run
+#   epoc2_020  historical + ssp585,  1990-2026-03 (still running)  <- the "ICON-historical" run
 #
 # Three things about this output are not like the CMIP archives:
 #

@@ -73,31 +73,31 @@ threshold.
 |---|---|---|---|---|
 | MPI-ESM1-2-LR grand ensemble | ~1° | 12,550 | JJA 2016, member r24 | **+0.67** |
 | MPI-ESM1.2-ER | ~10 km | 450 | JJA 2038, member r2 | +0.60 |
-| km-scale ICON (EPOC, transient GHG) | 5 km | 35 | JJA 2002 | +0.59 |
+| km-scale ICON (EPOC, transient GHG) | 5 km | 36 | JJA 2002 | +0.59 |
 | km-scale ICON (EPOC, control) | 5 km | 35 | JJA 2005 | +0.53 |
 | EERIE ICON-ESM-ER (hist+ssp245) | 5 km, archived 0.25° | 101 | JJA 2039 | +0.50 |
 | EERIE ICON-ESM-ER (control) | 5 km, archived 0.25° | 101 | JJA 2041 | +0.61 |
 
 **The raw ranking is an artefact of sample size.** MPI-GE gets 12,550 draws at a
-good analogue; MPI-ESM1.2-ER gets 450 and the km-scale ICON run gets 35.
+good analogue; MPI-ESM1.2-ER gets 450 and the km-scale ICON runs get 36 (transient) and 35 (control).
 Equalising to 35 draws (`best_of_n_bootstrap.csv`):
 
 | | best-of-35 | 5–95% |
 |---|---|---|
 | MPI-ESM1-2-LR (~1° ocean) | +0.39 | +0.27 to +0.53 |
 | MPI-ESM1.2-ER (~10 km ocean) | +0.46 | +0.31 to +0.60 |
-| km-scale ICON (EPOC, 5 km) | +0.59 (its actual best of 35) | — |
+| km-scale ICON (EPOC, 5 km) | +0.59 (its actual best of 36) | — |
 
 **Ocean resolution helps, and the cleanest evidence is the MPI pair.** MPI-GE
 and MPI-ESM1.2-ER are the same model family differing mainly in ocean
 resolution (~1° vs ~10 km), and the finer one reaches +0.46 against +0.39 on
-equal sampling. The km-scale ICON run's +0.59 out of its own 35 seasons sits
+equal sampling. The km-scale ICON run's +0.59 out of its own 36 seasons sits
 above MPI-GE's 95th percentile. The ordering is not monotonic in resolution
 overall — EERIE is lowest at +0.35 — but EERIE is only archived at 0.25°, so
 what is scored there is not its 5 km field.
 
 *Caveat on `best_of_n_bootstrap.csv`:* resampling is with replacement, so for a
-dataset whose record is already only 35 seasons the "best-of-35" estimate is
+dataset whose record is already only 35–36 seasons the "best-of-35" estimate is
 degenerate (bounded by its own maximum) and is not an independent estimate. Use
 the bootstrap as a **reference distribution from the large-sample datasets**
 (MPI-GE, and EERIE at n=101) and compare the short records' actual maxima
@@ -105,7 +105,7 @@ against it, as above.
 
 **A 2026-like pattern is rare everywhere.** Measured against the observed 2003
 analogue, only **1 of 12,550** MPI-GE seasons reaches it — and **0 of 450**
-(MPI-ESM1.2-ER), **0 of 35** (EPOC) and **0 of 101** (EERIE) (figure 3).
+(MPI-ESM1.2-ER), **0 of 36** (EPOC) and **0 of 101** (EERIE) (figure 3).
 
 **It looks like internal variability, not a forced signal.** The constant-forcing
 control runs do as well as their forced counterparts — EERIE control +0.61 vs
@@ -138,14 +138,14 @@ record):
 | MPI-GE (1850–2100) | +0.074 | +0.087 | +0.083 | +0.104 |
 | MPI-ESM1.2-ER (1950–2099, ssp585) | +0.194 | +0.233 | +0.218 | +0.301 |
 | EERIE (1950–2050) | +0.125 | +0.192 | +0.180 | +0.244 |
-| km-scale ICON (1990–2024) | +0.130 | +0.358 | +0.330 | +0.482 |
+| km-scale ICON (1990–2025) | +0.133 | +0.346 | +0.323 | +0.446 |
 
 Absolute trends are not comparable across these rows — the records cover
 different periods and scenarios (ssp245 for MPI-GE and EERIE, ssp585 for
 MPI-ESM1.2-ER and EPOC). The comparable quantity is the **Mediterranean
 amplification**, the ratio of the Mediterranean trend to the global one:
-observed **2.05**, MPI-GE 1.40, MPI-ESM1.2-ER 1.55, EERIE 1.95, EPOC 3.71 (over
-35 years only). Every model but EPOC under-does the observed amplification, and
+observed **2.05**, MPI-GE 1.40, MPI-ESM1.2-ER 1.55, EERIE 1.95, EPOC 3.36 (over
+36 years only). Every model but EPOC under-does the observed amplification, and
 here too the finer MPI ocean is closer than the coarse one.
 
 MPI-ESM1-2-LR warms the Mediterranean at only ~1.4× its global rate against
@@ -205,8 +205,10 @@ Forcing, read off the run scripts rather than the pad (they differ):
 **transient historical + SSP5-8.5 greenhouse-gas run**, but with Kinne aerosols
 held at 1850, which is what the `_aerosols` build name refers to.
 
-Coverage: `epoc2_010` 1990–2024; `epoc2_020` runs to 2025-07, so its last
-complete JJA is 2024. Neither has JJA 2026.
+Coverage: `epoc2_010` 1990–2024; `epoc2_020` is still running (at 2026-03 as
+of 2026-10-05), so its last complete JJA is 2025. Neither has JJA 2026 yet.
+From 2025-01 on, `epoc2_020` files are written uncompressed (~2.5 GB instead
+of ~0.85 GB); variables, names and the three traps above are unchanged.
 
 **MPI-ESM1.2-ER** T127 atmosphere (~100 km) + the eddy-resolving MPIOM TP6M
 ocean (3602×2394 curvilinear, ~0.1° / ~10 km) — the same model family as MPI-GE
