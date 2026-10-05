@@ -13,8 +13,7 @@ it with the same two metrics used in the earlier 2023 work:
              basin-mean warmth that survives after the global warming signal is
              taken out still counts as part of the pattern.
 
-The correlation maths generalises `src/pattern_correlation.py` (still used by
-the 2023 scripts) by taking the spatial dimensions explicitly, so a field that
+The correlation takes the spatial dimensions explicitly, so a field that
 also carries an ensemble `member` dimension is handled without member being
 mistaken for a spatial axis.
 

@@ -4,8 +4,8 @@ Pattern-correlation study of the **observed JJA 2026** sea surface temperature
 pattern over **30–60°N, 80°W–40°E** against four simulation sources, including
 two km-scale ICON configurations that are new to this repository.
 
-This supersedes the 2023 JJA analysis in `scripts/pattern_corr/` for new work;
-that pipeline and `src/pattern_correlation.py` are left in place unchanged.
+It succeeds an earlier JJA 2023 analysis (MPI-GE only), whose scripts were
+removed from this branch; they remain in the git history on `main`.
 
 ## What is different from the 2023 analysis
 
@@ -19,20 +19,22 @@ that pipeline and `src/pattern_correlation.py` are left in place unchanged.
 
 ## Running it
 
+Script layout and run order: [scripts/README.md](../scripts/README.md).
+
 ```bash
 cd /work/mh0033/m300883/North_Atlantic_SST_pattern
-sbatch scripts/pattern_2026/01_era5.sh        # observations, 1940-2026
-sbatch scripts/pattern_2026/02_mpige.sh       # MPI-ESM1-2-LR, 50 members
-sbatch scripts/pattern_2026/03_epoc_icon.sh   # km-scale ICON (EPOC), 2 experiments
-sbatch scripts/pattern_2026/04_eerie.sh       # EERIE ICON-ESM-ER, 2 experiments
-sbatch scripts/pattern_2026/14_mpi_er.sh     # MPI-ESM1.2-ER, 3 realizations
-sbatch scripts/pattern_2026/10_kmscale_zoom.sh  # zoom data for figure 5 (needs 03)
+sbatch scripts/pre_process/01_era5.sh          # observations, 1940-2026
+sbatch scripts/pre_process/02_mpige.sh         # MPI-ESM1-2-LR, 50 members
+sbatch scripts/pre_process/03_epoc_icon.sh     # km-scale ICON (EPOC), 2 experiments
+sbatch scripts/pre_process/04_eerie.sh         # EERIE ICON-ESM-ER, 2 experiments
+sbatch scripts/pre_process/05_mpi_er.sh        # MPI-ESM1.2-ER, 3 realizations
+sbatch scripts/pre_process/06_kmscale_zoom.sh  # zoom data for figure 5 (needs 03)
 
-# then the analysis and all five figures (handles the conda env itself):
-bash scripts/pattern_2026/make_figures.sh
+# then the analysis and all six figures (handles the conda env itself):
+bash scripts/run_analysis.sh
 ```
 
-Steps 01–04 are independent and idempotent — each skips work whose output is
+Stages 01–05 are independent and idempotent — each skips work whose output is
 already on disk, so a partial run can be resubmitted as is.
 
 ## The common interface

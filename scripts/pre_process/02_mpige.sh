@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_mpige
-#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026/logs/mpige.%j.out
+#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/mpige.%j.out
 #SBATCH --partition=compute
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -10,7 +10,7 @@
 #SBATCH --account=mh0033
 #
 # MPI-ESM1-2-LR grand ensemble (50 members), Omon/tos, historical + ssp245,
-# JJA 1850-2100, reduced to the two common products (see 00_config.sh).
+# JJA 1850-2100, reduced to the two common products (see ../config.sh).
 #
 # One node with GNU parallel, not multi-node MPI: the work is I/O-bound.
 # Bilinear/conservative remap weights are generated once from the shared
@@ -19,12 +19,12 @@
 
 set -euo pipefail
 # SLURM copies the batch script into /var/spool, so $0 is not the repo path.
-SCRIPT_DIR=${NA2026_SCRIPT_DIR:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026}
-source "${SCRIPT_DIR}/00_config.sh"
+SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
+source "${SCRIPTS}/config.sh"
 module load parallel 2>/dev/null || true
 
 WORK=${WORK_BASE}/mpige
-mkdir -p "$WORK" "${SCRIPT_DIR}/logs"
+mkdir -p "$WORK" "${PROJECT_ROOT}/logs"
 
 CMIP=/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical
 SCEN=/pool/data/CMIP6/data/ScenarioMIP/MPI-M/MPI-ESM1-2-LR/ssp245
@@ -38,7 +38,7 @@ fi
 
 process_member() {
     ens=$1
-    source "$2/00_config.sh"
+    source "$2/config.sh"
     WORK=${WORK_BASE}/mpige
     WGT=${WORK}/wgt_mpige_to_na025.nc
     CMIP=/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical
@@ -74,10 +74,10 @@ process_member() {
 export -f process_member
 
 echo "=== 50 members, 20-way parallel ==="
-parallel -j 20 process_member {} "$SCRIPT_DIR" ::: $(seq 1 50)
+parallel -j 20 process_member {} "$SCRIPTS" ::: $(seq 1 50)
 
 echo "=== stacking members ==="
 activate_python
-python3 "${SCRIPT_DIR}/_stack_members.py"
+python3 "${SCRIPTS}/pre_process/stack_mpige.py"
 
 echo "=== done ==="

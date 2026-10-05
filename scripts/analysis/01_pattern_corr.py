@@ -10,7 +10,7 @@ Outputs : data/pattern_2026/results/
             ocean_mask_1deg.nc       the common domain all scores are taken over
             summary.json             headline numbers quoted in the figures
 
-Run after 01-04 have produced their outputs.
+Run after the pre_process/ stages have produced their outputs.
 """
 import json
 import sys

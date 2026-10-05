@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_epoc
-#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026/logs/epoc.%j.out
+#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/epoc.%j.out
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -33,12 +33,12 @@
 # regional fields rather than on 6 GB of native-grid intermediates.
 
 set -euo pipefail
-SCRIPT_DIR=${NA2026_SCRIPT_DIR:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026}
-source "${SCRIPT_DIR}/00_config.sh"
+SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
+source "${SCRIPTS}/config.sh"
 module load parallel 2>/dev/null || true
 
 WORK=${WORK_BASE}/epoc
-mkdir -p "$WORK" "${SCRIPT_DIR}/logs"
+mkdir -p "$WORK" "${PROJECT_ROOT}/logs"
 
 ICON_OCE_GRID=/pool/data/ICON/grids/public/mpim/0045/icon_grid_0045_R02B09_O.nc
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_eerie
-#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026/logs/eerie.%j.out
+#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/eerie.%j.out
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
@@ -20,11 +20,11 @@
 # Only r1i1p1f1 is on disk for the forced runs at this location.
 
 set -euo pipefail
-SCRIPT_DIR=${NA2026_SCRIPT_DIR:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026}
-source "${SCRIPT_DIR}/00_config.sh"
+SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
+source "${SCRIPTS}/config.sh"
 
 WORK=${WORK_BASE}/eerie
-mkdir -p "$WORK" "${SCRIPT_DIR}/logs"
+mkdir -p "$WORK" "${PROJECT_ROOT}/logs"
 
 CMOR=/work/bm1344/DKRZ/CMOR/EERIE/HighResMIP/MPI-M/ICON-ESM-ER
 CTRL=/pool/data/EERIE/EERIE/MPI-M/ICON-ESM-ER/eerie-control-1950

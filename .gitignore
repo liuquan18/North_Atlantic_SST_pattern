@@ -212,6 +212,9 @@ marimo/_lsp/
 __marimo__/
 
 /doc/*
+!/doc/*.md
+logs/*
+!logs/.gitkeep
 *.png
 *.pdf
 *.out

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_mpier
-#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026/logs/mpier.%j.out
+#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/mpier.%j.out
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=12
@@ -31,12 +31,12 @@
 #    global mean rather than decompressing the source twice.
 
 set -euo pipefail
-SCRIPT_DIR=${NA2026_SCRIPT_DIR:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026}
-source "${SCRIPT_DIR}/00_config.sh"
+SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
+source "${SCRIPTS}/config.sh"
 module load parallel 2>/dev/null || true
 
 WORK=${WORK_BASE}/mpier
-mkdir -p "$WORK/reg" "$WORK/gm" "${SCRIPT_DIR}/logs"
+mkdir -p "$WORK/reg" "$WORK/gm" "${PROJECT_ROOT}/logs"
 
 SRC=/work/uo0122/u241089/MPIESM
 declare -A MEMBER=( [ER]=1 [ER3]=2 [ER5]=3 )
@@ -83,5 +83,5 @@ done
 
 echo "=== stacking the three realizations ==="
 activate_python
-python3 "${SCRIPT_DIR}/_stack_mpier.py"
+python3 "${SCRIPTS}/pre_process/stack_mpi_er.py"
 echo "=== done ==="

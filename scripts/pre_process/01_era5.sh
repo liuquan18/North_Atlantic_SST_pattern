@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_era5
-#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026/logs/era5.%j.out
+#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/era5.%j.out
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
@@ -20,11 +20,11 @@
 
 set -euo pipefail
 # SLURM copies the batch script into /var/spool, so $0 is not the repo path.
-SCRIPT_DIR=${NA2026_SCRIPT_DIR:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026}
-source "${SCRIPT_DIR}/00_config.sh"
+SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
+source "${SCRIPTS}/config.sh"
 
 WORK=${WORK_BASE}/era5
-mkdir -p "$WORK" "${SCRIPT_DIR}/logs"
+mkdir -p "$WORK" "${PROJECT_ROOT}/logs"
 
 ERA5_MON=/pool/data/ERA5/E5/sf/an/1M/034
 ERA5T_HOUR=/pool/data/ERA5/ET/sf/an/1H/034

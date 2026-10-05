@@ -64,7 +64,7 @@ def main():
     fields = {(c[0], z[0]): load_zoom(c[0], z[0]) for c in COLS for z in ZOOMS}
     missing = [k for k, v in fields.items() if v is None]
     if missing:
-        raise SystemExit(f"missing zoom files for {missing}; run 10_kmscale_zoom.sh first")
+        raise SystemExit(f"missing zoom files for {missing}; run scripts/pre_process/06_kmscale_zoom.sh first")
 
     panel_w = 3.0
     fig_w = panel_w * len(COLS) + 1.8

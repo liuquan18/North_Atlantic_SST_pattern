@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_zoom
-#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026/logs/zoom.%j.out
+#SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/zoom.%j.out
 #SBATCH --partition=shared
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -22,11 +22,11 @@
 # MPI-GE intermediates are deleted by 02_mpige.sh once its anomalies are out.
 
 set -euo pipefail
-SCRIPT_DIR=${NA2026_SCRIPT_DIR:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/pattern_2026}
-source "${SCRIPT_DIR}/00_config.sh"
+SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
+source "${SCRIPTS}/config.sh"
 
 WORK=${WORK_BASE}/zoom
-mkdir -p "$WORK" "${SCRIPT_DIR}/logs"
+mkdir -p "$WORK" "${PROJECT_ROOT}/logs"
 ICON_OCE_GRID=/pool/data/ICON/grids/public/mpim/0045/icon_grid_0045_R02B09_O.nc
 
 # --- the two zoom grids ---------------------------------------------------
@@ -87,7 +87,7 @@ echo "=== km-scale ICON / EPOC (5 km ocean, native unstructured) ==="
 # built from the native-grid monthly files so the 5 km structure survives
 EPOC=/work/bm1313/b383127/epoc-icon-2024.10_aerosols/experiments/epoc2_020/work
 MASK=${WORK_BASE}/epoc/landmask_epoc2_020.nc
-if [ ! -s "$MASK" ]; then echo "  ERROR: run 03_epoc_icon.sh first (need the land mask)" >&2; exit 1; fi
+if [ ! -s "$MASK" ]; then echo "  ERROR: run pre_process/03_epoc_icon.sh first (need the land mask)" >&2; exit 1; fi
 if [ ! -s "${WORK}/clim_epoc.nc" ]; then
     files=""
     for y in $(seq ${CLIM_START} ${CLIM_END}); do
