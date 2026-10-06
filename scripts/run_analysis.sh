@@ -20,6 +20,8 @@ python3 "${SCRIPTS}/plotting/fig3_hist.py"
 python3 "${SCRIPTS}/plotting/fig4_era5_context.py"
 python3 "${SCRIPTS}/plotting/fig5_kmscale.py"
 python3 "${SCRIPTS}/plotting/fig6_region_means.py"
+python3 "${SCRIPTS}/plotting/fig7_event_composite.py"
+python3 "${SCRIPTS}/plotting/fig7_event_composite_select.py"
 
 echo
 echo "figures in ${PROJECT_ROOT}/figures/pattern_2026:"

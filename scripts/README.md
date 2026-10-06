@@ -36,7 +36,7 @@ in `data/pattern_2026/`. Stages 01–05 are independent and idempotent.
 
 ## plotting/
 
-`fig1_patterns.py` … `fig6_region_means.py`, one per figure. Figures 1–4 need
+`fig1_patterns.py` … `fig7_event_composite.py`, one per figure. Figures 1–4 and 7 need
 `analysis/01`; figure 1 also needs `european_heatwave/` (its top row), figure 5 needs `pre_process/06`, figure 6 needs `analysis/02`.
 
 SLURM logs go to `logs/` at the project root.

@@ -115,7 +115,7 @@ def main():
             if i == 0:
                 d = p2.DATASETS[c["key"]]
                 if c["key"] == "ERA5":
-                    sub = "observed" if c["which"] == "ref" else "closest earlier summer"
+                    sub = "reference season" if c["which"] == "ref" else "closest earlier summer"
                 else:
                     sub = d.resolution
                 when = f"JJA {c['year']}" + (f" · r{c['member']}" if c["member"] else "")
@@ -126,7 +126,7 @@ def main():
             if fmt is not None:
                 vz.panel_tag(ax, "land mean " + fmt.format(land_mean(field)), loc="upper right")
             if j == 0:
-                ax.text(-0.17, 0.5, label, transform=ax.transAxes, rotation=90,
+                ax.text(-0.24, 0.5, label, transform=ax.transAxes, rotation=90,
                         va="center", ha="center", fontsize=9.2, color=vz.INK)
 
         cax = fig.add_subplot(gs[i, -1])

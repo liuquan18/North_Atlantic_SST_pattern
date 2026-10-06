@@ -333,3 +333,120 @@ def area_mean(da: xr.DataArray, mask: xr.DataArray | None = None) -> xr.DataArra
     field = da.where(mask) if mask is not None else da
     w = (np.cos(np.deg2rad(field["lat"])) * xr.ones_like(field["lon"])).where(field.notnull())
     return (field * w).sum(("lat", "lon")) / w.sum(("lat", "lon"))
+
+
+# --------------------------------------------------------------------------
+# event composites (figure 7)
+# --------------------------------------------------------------------------
+#: With at least this many members, the ensemble mean is a clean estimate of
+#: the forced part of a correlation series; below it, it still carries a large
+#: share of each member's own internal variability.
+ENSEMBLE_MEAN_MIN_MEMBERS = 10
+
+#: Records at least this long get a quadratic forced baseline, shorter ones a
+#: linear one. A parabola fitted to a ~90-yr record can bend into a single
+#: 60-70-yr swing, which is exactly the variability under study, and remove it.
+QUADRATIC_MIN_YEARS = 100
+
+
+def internal_component(r: xr.DataArray, *, control: bool = False) -> xr.DataArray:
+    """
+    A correlation series with its forced part removed.
+
+    Composites of raw correlation slope upward through any forced record,
+    because the seasons resembling a warm 2026 cluster late in the century; what
+    is left once the forced part is gone is the internally generated part, which
+    is what can carry decadal persistence.
+
+      large ensemble    minus the ensemble mean, year by year
+      control run       minus its own mean (there is no forcing to remove)
+      anything else     minus a per-member polynomial in time: quadratic for
+                        records of QUADRATIC_MIN_YEARS or more, linear otherwise
+    """
+    mdim = member_dim(r)
+    if mdim and int(r.notnull().any("year").sum()) >= ENSEMBLE_MEAN_MIN_MEMBERS:
+        return r - r.mean(mdim)
+
+    def detrend(x: np.ndarray, years: np.ndarray) -> np.ndarray:
+        ok = np.isfinite(x)
+        out = np.full_like(x, np.nan)
+        if ok.sum() < 3:
+            return out
+        if control:
+            deg = 0
+        else:
+            deg = 2 if years[ok].max() - years[ok].min() + 1 >= QUADRATIC_MIN_YEARS else 1
+        out[ok] = x[ok] - np.polyval(np.polyfit(years[ok], x[ok], deg), years[ok])
+        return out
+
+    return xr.apply_ufunc(detrend, r, r["year"], input_core_dims=[["year"], ["year"]],
+                          output_core_dims=[["year"]], vectorize=True).transpose(*r.dims)
+
+
+def event_onsets(x: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Indices where `x` reaches `threshold` from below.
+
+    Only the first season of a run above the threshold counts, so a spell of
+    several high seasons is one event, aligned on when it began. A run already
+    above the threshold at the start of the record has no observed onset and is
+    skipped.
+    """
+    above = np.asarray(x) >= threshold
+    prev_below = np.zeros_like(above)
+    prev_below[1:] = np.isfinite(x[:-1]) & ~above[:-1]
+    return np.flatnonzero(above & prev_below)
+
+
+def epoch_windows(x: np.ndarray, onsets: np.ndarray, lag: int) -> np.ndarray:
+    """(n_events, 2*lag+1) windows of `x` centred on each onset, NaN past the record ends."""
+    x = np.asarray(x, dtype=float)
+    padded = np.concatenate([np.full(lag, np.nan), x, np.full(lag, np.nan)])
+    idx = np.asarray(onsets)[:, None] + np.arange(2 * lag + 1)[None, :]
+    return padded[idx] if len(onsets) else np.empty((0, 2 * lag + 1))
+
+
+def random_onset_band(series: list[np.ndarray], n_events: int, lag: int, *,
+                      n_draws: int = 2000, quantiles=(0.05, 0.95),
+                      seed: int = 0) -> np.ndarray:
+    """
+    Quantiles, per lag, of the composite mean of `n_events` onsets drawn at random.
+
+    The null for a composite: what averaging this many windows of the same
+    series gives when nothing singles out the centre season. Onsets are drawn
+    uniformly over every valid season of every series (member), so a long
+    ensemble and a single short run are each judged against their own record.
+    Returns an array of shape (len(quantiles), 2*lag+1).
+    """
+    rng = np.random.default_rng(seed)
+    pool = [(i, j) for i, s in enumerate(series) for j in np.flatnonzero(np.isfinite(s))]
+    pool = np.array(pool)
+    means = np.empty((n_draws, 2 * lag + 1))
+    for d in range(n_draws):
+        pick = pool[rng.integers(len(pool), size=n_events)]
+        w = np.concatenate([epoch_windows(series[i], pick[pick[:, 0] == i, 1], lag)
+                            for i in np.unique(pick[:, 0])])
+        with np.errstate(invalid="ignore"):
+            means[d] = np.nanmean(w, axis=0)
+    return np.nanquantile(means, quantiles, axis=0)
+
+
+def largest_events(series: list[np.ndarray], n: int, min_separation: int) -> list[np.ndarray]:
+    """
+    The `n` highest seasons across all `series` (members), as indices per series.
+
+    Picked greedily from the top; a season within `min_separation` years of one
+    already picked in the same series is skipped, so a single warm spell cannot
+    supply several events. Returns one sorted index array per series.
+    """
+    cand = sorted(((x[j], i, j) for i, x in enumerate(series)
+                   for j in np.flatnonzero(np.isfinite(x))), reverse=True)
+    picked: list[list[int]] = [[] for _ in series]
+    count = 0
+    for _, i, j in cand:
+        if count == n:
+            break
+        if all(abs(j - k) >= min_separation for k in picked[i]):
+            picked[i].append(j)
+            count += 1
+    return [np.array(sorted(p), dtype=int) for p in picked]
