@@ -106,7 +106,7 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
     Heatwave days (top) over SST pattern (bottom), one column per season.
 
     A column may carry its own "hw_tag" for the heatwave panel (default: the
-    land-mean heatwave days); `lat_line` draws a dashed parallel on the
+    land-mean heatwave days) and "r_tag" for the SST panel (default: r); `lat_line` draws a dashed parallel on the
     heatwave maps, e.g. to mark a sub-region the tag refers to.
     """
     vz.use_style()
@@ -129,7 +129,9 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
     fig_w = panel_w * n + 2.0
     # head room for the column titles: ~0.18 in per title line beyond the first
     title_h = 0.18 * max(c["title"].count("\n") for c in cols)
-    top_h = 1.39 + title_h
+    # ...and for caption lines beyond the default two (one is in hw_note's place)
+    caption_h = 0.17 * hw_note.count("\n")
+    top_h = 1.39 + title_h + caption_h
     fig_h = h_top + h_bot + top_h + 0.65
 
     fig = plt.figure(figsize=(fig_w, fig_h))
@@ -165,7 +167,7 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
         im_sst = vz.draw_map(ax, c["sst"], sst_levels, sst_cmap,
                              labels_bottom=True, labels_left=(j == 0))
         if c["r"] is not None:
-            vz.panel_tag(ax, f"r = {c['r']:+.2f}", loc="upper right")
+            vz.panel_tag(ax, c.get("r_tag") or f"r = {c['r']:+.2f}", loc="upper right")
 
     for i, label in enumerate(["JJA heatwave days", "JJA SST pattern"]):
         fig.text(0.012, gs[i, 0].get_position(fig).y0 + gs[i, 0].get_position(fig).height / 2,

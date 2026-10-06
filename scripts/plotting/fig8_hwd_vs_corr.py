@@ -12,14 +12,16 @@ their late-century seasons:
   y   land-mean JJA heatwave days over the whole European map
       (Xu et al. 2026 definition, 1991-2020 reference of the same dataset)
 
-The large ensemble (DENSITY_KEYS) is drawn as its joint probability density
-instead: 1,800 overlapping dots hide where the seasons actually are. Filled
-contours enclose the most probable 25/50/75/90/95 % of seasons (highest-density
-regions of a Gaussian KDE); only the seasons outside the outermost contour
-are drawn as dots.
-
-Points and the density wear each dataset's colour from figure 2. Each panel carries the
-least-squares line of y on x with its Pearson r and two-sided p-value. The
+Points are coloured by the season's mean heatwave intensity: the mean Tmax
+anomaly over all European land heatwave days of that season (area-weighted
+cumulative heat / area-weighted heatwave days -- the "intensity" row of
+fig1_heatwaves.py, pooled over the map). Seasons without any heatwave day
+have no intensity and are drawn hollow. One colour scale serves all panels;
+MPI-GE's 1,800 seasons are drawn smaller. In each model panel the ringed
+point is the season shown in fig1_heatwave_analogues.py (select_season:
+high on both axes, or for MPI-GE furthest along the fitted line); in ERA5, JJA 2015, 2003 and 2026 are ringed -- 2026 drawn as the
+reference, outside PERIOD, at r = 1 by construction and left out of the fit. Each panel carries the least-squares line of y on x with its Pearson r, two-sided p-value and slope
+(heatwave days per +0.1 of pattern correlation). The
 p-value treats every season as independent -- reasonable across members and
 years of JJA, but it ignores any year-to-year persistence.
 """
@@ -28,9 +30,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import xarray as xr
 from scipy import stats
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 
 sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -40,48 +43,79 @@ import src.viz2026 as vz
 from fig1_patterns_simulations import VARIANT, land_mean_series
 
 KEYS = ["ERA5", "MPI-GE", "ICON-EPOC-hist", "EERIE"]
+#: observed seasons marked in the ERA5 panel; 2026 is outside PERIOD and is
+#: drawn as the reference (r = 1 by construction), not used in the fit
+ERA5_MARKED = [p2.REF_YEAR, 2015, 2003]
+#: label offsets (points, ha) -- 2003 and 2015 sit almost on top of each other
+#: how each model's season is selected (default "both"):
+#:   "both"       top_on_both -- highest lower percentile rank of r and heatwave days
+#:   "along_fit"  along_fit   -- highest r among seasons close to the fitted line;
+#:                for MPI-GE, where "both" lands on the long hot tail of 1,800
+#:                seasons rather than on the relationship the line describes
+SELECTION = {"MPI-GE": "along_fit"}
+#: "close to the fitted line": |residual| within this many residual std devs
+FIT_BAND = 0.5
+MARK_OFFSET = {2003: (8, 2, "left"), 2015: (0, -19, "center"), p2.REF_YEAR: (-8, 4, "right")}
 PERIOD = (1990, 2025)
-DENSITY_KEYS = {"MPI-GE"}
-#: probability mass enclosed by each density contour, outermost first
-HDR_MASS = [0.95, 0.90, 0.75, 0.50, 0.25]
-#: probability shades, light (outer) -> dark (inner), in MPI-GE's blue
-DENSITY_CMAP = LinearSegmentedColormap.from_list("density", ["#d6e6f8", vz.COLORS["MPI-GE"], "#0f3a6e"])
+#: intensity: the project's heatwave colours, minus the near-white end that
+#: would make dots vanish on the surface
+INTENSITY_CMAP = LinearSegmentedColormap.from_list(
+    "intensity", vz.heatwave_cmap()(np.linspace(0.22, 1.0, 256)))
 
 
-def season_table(key, corr):
-    """One row per scored season: year, member, r, heatwave days."""
+def season_table(key, corr, period=PERIOD):
+    """One row per scored season: year, member, r, heatwave days, mean intensity."""
     with xr.open_dataset(hw.metrics_file(key)) as ds:
         hwd = land_mean_series(ds.hwd.load())
+        # same land cells and weights in both means, so the ratio is
+        # sum(w * cumulative heat) / sum(w * heatwave days)
+        intensity = (land_mean_series(ds.hwcum.load()) / hwd).where(hwd > 0)
     r = corr[key]
     mdim = p2.member_dim(r)
     if mdim:
         r = r.rename({mdim: "member"})
-    r, hwd = xr.align(r, hwd, join="inner")
-    df = xr.Dataset({"r": r, "hwd": hwd}).to_dataframe().reset_index().dropna(subset=["r", "hwd"])
+    r, hwd, intensity = xr.align(r, hwd, intensity, join="inner")
+    df = (xr.Dataset({"r": r, "hwd": hwd, "intensity": intensity}).to_dataframe()
+          .reset_index().dropna(subset=["r", "hwd"]))
     if "member" not in df:
         df["member"] = np.nan
-    return df.loc[df.year.between(*PERIOD), ["year", "member", "r", "hwd"]]
+    return df.loc[df.year.between(*period), ["year", "member", "r", "hwd", "intensity"]]
 
 
-def draw_density(ax, x, y, cmap):
+def top_on_both(t):
     """
-    Joint probability density of (x, y) as nested highest-density regions.
-
-    Each contour is the density level above which HDR_MASS of the seasons lie,
-    so the bands read directly as "the most likely p % of seasons".
-    Returns the outlying seasons (outside the outermost contour).
+    The season whose LOWER percentile rank -- of pattern correlation and of
+    heatwave days, within the dataset -- is highest: near the top of both.
     """
-    kde = stats.gaussian_kde(np.vstack([x, y]))
-    at_points = kde(np.vstack([x, y]))
-    levels = [np.quantile(at_points, 1 - m) for m in HDR_MASS]
-    gx, gy = np.meshgrid(np.linspace(x.min() - 0.15, x.max() + 0.15, 200),
-                         np.linspace(max(y.min() - 3, -0.5), y.max() + 3, 200))
-    dens = kde(np.vstack([gx.ravel(), gy.ravel()])).reshape(gx.shape)
-    shades = cmap(np.linspace(0.15, 0.85, len(levels)))
-    ax.contourf(gx, gy, dens, levels=levels + [dens.max() * 1.01], colors=shades, zorder=2)
-    ax.contour(gx, gy, dens, levels=levels, colors=[vz.SURFACE], linewidths=0.6, zorder=2.5)
-    outside = at_points < levels[0]
-    return outside, levels, shades
+    t = t.copy()
+    pct = t[["r", "hwd"]].rank(pct=True)
+    t["rank_r"], t["rank_hwd"] = pct.r, pct.hwd
+    t["score"] = pct.min(axis=1)
+    return t.loc[t.score.idxmax()]
+
+
+def along_fit(t, fit):
+    """The highest-r season among those within FIT_BAND residual std devs of the fit."""
+    t = t.copy()
+    resid = t.hwd - (fit.intercept + fit.slope * t.r)
+    t["rank_r"] = t.r.rank(pct=True)
+    t["rank_hwd"] = t.hwd.rank(pct=True)
+    near = t[resid.abs() <= FIT_BAND * resid.std()]
+    return near.loc[near.r.idxmax()]
+
+
+def select_season(key, t, fit):
+    """The season a model panel rings and figure 1 maps (see SELECTION)."""
+    return along_fit(t, fit) if SELECTION.get(key) == "along_fit" else top_on_both(t)
+
+
+def scatter_intensity(ax, t, norm, s):
+    """Seasons coloured by mean heatwave intensity; seasons with no heatwave hollow."""
+    has = t.intensity.notna()
+    ax.scatter(t.r[~has], t.hwd[~has], s=s, facecolor="none", edgecolor=vz.INK_MUTED,
+               linewidths=0.7, zorder=2)
+    return ax.scatter(t.r[has], t.hwd[has], s=s, c=t.intensity[has], cmap=INTENSITY_CMAP,
+                      norm=norm, edgecolor=vz.SURFACE, linewidths=0.3, zorder=2.6)
 
 
 def main():
@@ -91,24 +125,31 @@ def main():
     fits = {k: stats.linregress(t.r, t.hwd) for k, t in tables.items()}
 
     ymax = max(t.hwd.max() for t in tables.values())
-    fig, axes = plt.subplots(1, len(KEYS), figsize=(3.3 * len(KEYS) + 1.2, 4.8),
+    allint = pd.concat([t.intensity for t in tables.values()]).dropna()
+    inorm = Normalize(*np.floor(np.percentile(allint, [2, 98]) * 2) / 2 + [0, 0.5])
+    fig, axes = plt.subplots(1, len(KEYS), figsize=(3.3 * len(KEYS) + 1.2, 5.0),
                              sharex=True, sharey=True)
-    fig.subplots_adjust(left=0.06, right=0.985, top=0.70, bottom=0.12, wspace=0.08)
+    fig.subplots_adjust(left=0.06, right=0.9, top=0.68, bottom=0.115, wspace=0.08)
 
     for ax, key in zip(axes, KEYS):
         t = tables[key].sort_values("year")
         n = len(t)
-        if key in DENSITY_KEYS:
-            outside, _, shades = draw_density(ax, t.r.values, t.hwd.values, DENSITY_CMAP)
-            ax.scatter(t.r[outside], t.hwd[outside], s=5, color=vz.INK_MUTED, linewidths=0,
-                       zorder=2)
-            handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in shades[::-1]]
-            ax.legend(handles, [f"{m:.0%}" for m in HDR_MASS[::-1]], title="most likely",
-                      loc="upper right", fontsize=6.8, title_fontsize=6.8, frameon=False,
-                      handlelength=1.2, handleheight=0.9, borderaxespad=0.3)
+        sc = scatter_intensity(ax, t, inorm, s=7 if n > 1000 else 24)
+        if key == "ERA5":
+            full = season_table(key, corr, (PERIOD[0], p2.REF_YEAR)).set_index("year")
+            ref = full.loc[[p2.REF_YEAR]].reset_index()
+            scatter_intensity(ax, ref, inorm, s=24)
+            marks = [(full.loc[y], y, f"JJA {y}") for y in ERA5_MARKED]
         else:
-            ax.scatter(t.r, t.hwd, s=22, color=vz.COLORS[key], alpha=0.8, linewidths=0,
-                       zorder=2)
+            sel = select_season(key, t, fits[key])
+            lab = f"JJA {int(sel.year)}" + (f" r{int(sel.member)}" if sel.member == sel.member else "")
+            marks = [(sel, None, lab)]
+        for row, y, lab in marks:
+            ax.scatter(row.r, row.hwd, s=90, facecolor="none", edgecolor=vz.INK,
+                       linewidths=1.5, zorder=4)
+            dx, dy, ha = MARK_OFFSET.get(y, (8, 2, "left"))
+            ax.annotate(lab, (row.r, row.hwd), xytext=(dx, dy), textcoords="offset points",
+                        ha=ha, va="bottom", fontsize=7.5, color=vz.INK, zorder=5)
         f = fits[key]
         xs = np.array([t.r.min(), t.r.max()])
         ax.plot(xs, f.intercept + f.slope * xs, color=vz.INK, lw=1.6, zorder=3)
@@ -116,28 +157,39 @@ def main():
         d = p2.DATASETS[key]
         ax.set_title(f"{d.label}\n{d.resolution}", fontsize=8.8, color=vz.INK, linespacing=1.3)
         p_txt = "p < 0.001" if f.pvalue < 0.001 else f"p = {f.pvalue:.3f}"
-        ax.text(0.03, 0.97, f"r = {f.rvalue:+.2f}  ({p_txt})",
+        ax.text(0.03, 0.97, f"r = {f.rvalue:+.2f}  ({p_txt})\n"
+                            f"slope = {f.slope / 10:+.2f} days per +0.1",
                 transform=ax.transAxes,
-                ha="left", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.35)
-        ax.grid(True, lw=0.5)
+                ha="left", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.35,
+                zorder=6, bbox=dict(facecolor=vz.SURFACE, alpha=0.85, edgecolor="none",
+                                    boxstyle="round,pad=0.25"))
+        ax.grid(False)
         ax.set_xlabel("SST pattern correlation with ERA5 JJA 2026", fontsize=8.2)
         ax.tick_params(labelsize=7.5)
 
+    cax = fig.add_axes([0.915, 0.115, 0.012, 0.565])
+    cb = fig.colorbar(sc, cax=cax, extend="both")
+    cb.set_label("mean heatwave intensity\n(Tmax anomaly on heatwave days, °C)",
+                 fontsize=8.2, color=vz.INK_SOFT)
+    cb.ax.tick_params(labelsize=7.5)
+    cb.outline.set_linewidth(0)
+
     axes[0].set_ylabel("European land-mean JJA heatwave days", fontsize=8.5)
-    axes[0].set_xlim(-0.75, 0.85)
-    axes[0].set_ylim(-0.5, ymax * 1.06)
+    axes[0].set_xlim(-0.75, 1.08)
+    axes[0].set_ylim(-0.5, ymax * 1.2)   # headroom: the stats text sits above the data
 
 
     fig.suptitle("Do 2026-like summer SST patterns come with more European heatwave days? "
                  f"JJA {PERIOD[0]}–{PERIOD[1]}",
                  fontsize=12, color=vz.INK, y=0.985)
-    fig.text(0.5, 0.92,
-             "one point per JJA season (and member)  ·  MPI-GE: joint probability "
-             "density, contours enclose the most likely 25–95 % of seasons, dots outside 95 %\n"
+    fig.text(0.48, 0.92,
+             "one point per JJA season (and member), coloured by mean heatwave intensity "
+             "(mean Tmax anomaly over the season's European land heatwave days)\n"
              "x: pattern correlation, box mean removed, 30–60°N, 80°W–40°E  ·  y: land-mean heatwave "
              "days, 35–70°N, 12°W–42°E (Xu et al. 2026)  ·  both against 1991–2020 of the same dataset\n"
-             "line: least-squares fit  ·  r = Pearson correlation of the linear relationship, "
-             "two-sided p-value",
+             f"ringed: ERA5 {p2.REF_YEAR} (reference, r = 1, not in the fit), 2015, 2003; models: the season "
+             "shown in the heatwave-analogue figure 1 (MPI-GE: highest r close to the fitted line)\nline: least-squares fit  ·  r = Pearson correlation of the linear relationship, "
+             "two-sided p-value  ·  slope: heatwave days per +0.1 of pattern correlation",
              ha="center", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.4)
 
     out = p2.FIG_DIR / "fig8_heatwave_days_vs_pattern_corr.png"
