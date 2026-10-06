@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
-from fig1_patterns_simulations import VARIANT, column, land_mean, plot_figure
+from fig1_patterns_simulations import VARIANT, column, land_mean, land_mean_series, plot_figure
 
 KEYS = ["MPI-GE", "ICON-EPOC-hist", "EERIE"]
 SOUTH_LAT = 60.0
@@ -36,11 +36,7 @@ SOUTH_EXTENT = vz.EUROPE_EXTENT[:3] + [SOUTH_LAT]
 
 def south_mean(hwd):
     """Area-weighted land-mean heatwave days south of SOUTH_LAT, per [member,] year."""
-    lon0, lon1, lat0, lat1 = SOUTH_EXTENT
-    inside = (hwd.lat >= lat0) & (hwd.lat <= lat1) & (hwd.lon >= lon0) & (hwd.lon <= lon1)
-    w = np.cos(np.deg2rad(hwd.lat)) * inside * hwd.notnull()
-    # all-NaN seasons (a member not run that year) have no weight: NaN, not 0
-    return (hwd.fillna(0) * w).sum(("lat", "lon")) / w.sum(("lat", "lon")).where(lambda x: x > 0)
+    return land_mean_series(hwd, SOUTH_EXTENT)
 
 
 def hottest_season(key, corr):

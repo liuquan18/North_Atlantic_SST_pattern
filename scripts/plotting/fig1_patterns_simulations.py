@@ -73,12 +73,22 @@ def heatwave_season(key, year, member):
         return ds.load()
 
 
-def land_mean(field, extent=None):
-    """Area-weighted mean over the land cells inside the drawn map extent."""
+def land_mean_series(field, extent=None):
+    """
+    Area-weighted mean over the land cells inside the drawn map extent, per
+    season ([member,] year). Seasons with no data (a member not run that
+    year) come out NaN, not 0.
+    """
     lon0, lon1, lat0, lat1 = extent or vz.EUROPE_EXTENT
     inside = ((field.lat >= lat0) & (field.lat <= lat1) & (field.lon >= lon0) & (field.lon <= lon1))
     w = np.cos(np.deg2rad(field.lat)) * (field.notnull() & inside)
-    return float((field.fillna(0) * w).sum() / w.sum())
+    wsum = w.sum(("lat", "lon"))
+    return (field.fillna(0) * w).sum(("lat", "lon")) / wsum.where(wsum > 0)
+
+
+def land_mean(field, extent=None):
+    """Area-weighted mean over the land cells inside the drawn map extent."""
+    return float(land_mean_series(field, extent))
 
 
 def column(key, year, member, r, title):
