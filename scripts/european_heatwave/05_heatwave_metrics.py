@@ -165,6 +165,19 @@ def process(key):
             return
         ds = xr.concat(parts, "member")
         land_desc = "MPI-ESM1-2-LR sftlf > 50 %, native T63 grid"
+    elif key in hw.MEMBERS:
+        parts = []
+        for e in hw.MEMBERS[key]:
+            files = sorted((HW_WORK / hw.DATASETS[key] / f"r{e}").glob("tmax_[12][0-9][0-9][0-9].nc"))
+            if not files:
+                print(f"!! {key} r{e}: no daily Tmax, skipped")
+                continue
+            parts.append(compute(open_tmax(files), land, f"{key} r{e}").expand_dims(member=[e]))
+        if not parts:
+            return
+        # members cover different years: outer-join, NaN where a member was not run
+        ds = xr.concat(parts, "member", join="outer")
+        land_desc = "ERA5 land-sea mask > 0.5"
     else:
         files = sorted((HW_WORK / hw.DATASETS[key]).glob("tmax_[12][0-9][0-9][0-9].nc"))
         if not files:
@@ -190,6 +203,8 @@ def process(key):
 
     wts = np.cos(np.deg2rad(ds.lat))
     mean_hwd = ds.hwd.weighted(wts).mean(("lat", "lon"))
+    if "member" in mean_hwd.dims:
+        mean_hwd = mean_hwd.mean("member")
     clim_mean = float(mean_hwd.sel(year=slice(*hw.REF_PERIOD)).mean())
     top = mean_hwd.to_series().sort_values(ascending=False).head(5)
     print(f"   -> {f}  {dict(ds.hwd.sizes)}")

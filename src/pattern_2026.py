@@ -96,7 +96,8 @@ DATASETS = {
                 "constant 1990 forcing"),
         Dataset("EERIE", "EERIE ICON-ESM-ER (hist+ssp245)",
                 "eerie_hist_ssp245_jja_anom_na025.nc", "eerie_hist_ssp245_jja_gmsst.nc",
-                "model", "10 km atm / 5 km ocean", (1950, 2050)),
+                "model", "10 km atm / 5 km ocean", (1950, 2050),
+                "3 realizations: r1 1950-2050, r2 1975-2014, r3 1975-2020"),
         Dataset("EERIE-ctrl", "EERIE ICON-ESM-ER (control)",
                 "eerie_control_jja_anom_na025.nc", "eerie_control_jja_gmsst.nc",
                 "model", "10 km atm / 5 km ocean", (1950, 2050),
@@ -195,7 +196,10 @@ def common_ocean_mask(fields: dict[str, xr.DataArray]) -> xr.DataArray:
     mask = None
     for da in fields.values():
         # a cell counts as ocean only if it is valid in every season and member
-        m = da.notnull().all([d for d in da.dims if d not in ("lat", "lon")])
+        # that exists: seasons a member was not run (EERIE r2/r3 cover fewer
+        # years than r1) are all-NaN padding and must not mask every cell
+        present = da.notnull().any(["lat", "lon"])
+        m = (da.notnull() | ~present).all([d for d in da.dims if d not in ("lat", "lon")])
         mask = m if mask is None else (mask & m)
     return mask.rename("ocean_mask")
 

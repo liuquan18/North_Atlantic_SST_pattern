@@ -99,6 +99,16 @@ def test_common_ocean_mask_is_an_intersection(ones):
     assert not bool(mask.sel(lon=0.125, lat=58.125, method="nearest"))
 
 
+def test_common_ocean_mask_ignores_seasons_a_member_was_not_run(ones):
+    # member 2 was not run in year 1 (all-NaN padding), and has land at 58N
+    a = xr.concat([ones, ones], "year").assign_coords(year=[1, 2])
+    a = xr.concat([a, a.where(a.lat < 55)], "member")
+    a[1, 0] = np.nan
+    mask = p2.common_ocean_mask({"a": a})
+    assert bool(mask.sel(lon=0.125, lat=40.125, method="nearest"))
+    assert not bool(mask.sel(lon=0.125, lat=58.125, method="nearest"))
+
+
 # --- event composites --------------------------------------------------------
 def test_event_onsets_counts_a_spell_once():
     x = np.array([0.1, 0.6, 0.7, 0.2, 0.5, np.nan, 0.9, 0.1])

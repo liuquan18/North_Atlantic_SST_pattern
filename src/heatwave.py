@@ -64,6 +64,11 @@ DATASETS = {
     "EERIE": "eerie_hist_ssp245",
 }
 
+#: Datasets with several realizations on the common grid, each read from its
+#: own r<m>/ subdirectory of the daily Tmax work dir; their metrics carry a
+#: `member` dimension, NaN in years a member was not run.
+MEMBERS = {"EERIE": [1, 2, 3]}
+
 #: Datasets kept on their native grid (cropped to Europe) instead of the common
 #: 0.25 deg one, with (member, year, lat, lon) metrics and their own land mask.
 NATIVE = {"MPI-GE"}

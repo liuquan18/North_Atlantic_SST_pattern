@@ -14,7 +14,7 @@ removed from this branch; they remain in the git history on `main`.
 | reference season | JJA 2023 | JJA 2026 |
 | region | 0–70°N, 80°W–0° | 30–60°N, 80°W–40°E (adds the Mediterranean) |
 | variable | `Amon/ts` then `Omon/tos` | `tos` / `to` only — never `ts`/`tas` |
-| simulations | MPI-GE | MPI-GE, km-scale ICON (EPOC ×2), EERIE ICON-ESM-ER (×2) |
+| simulations | MPI-GE | MPI-GE, km-scale ICON (EPOC ×2), EERIE ICON-ESM-ER (×2, forced run 3 members) |
 | scoring grid | ERA5's grid | common 1° grid, common ocean mask across all datasets |
 
 ## Running it
@@ -26,7 +26,7 @@ cd /work/mh0033/m300883/North_Atlantic_SST_pattern
 sbatch scripts/pre_process/01_era5.sh          # observations, 1940-2026
 sbatch scripts/pre_process/02_mpige.sh         # MPI-ESM1-2-LR, 50 members
 sbatch scripts/pre_process/03_epoc_icon.sh     # km-scale ICON (EPOC), 2 experiments
-sbatch scripts/pre_process/04_eerie.sh         # EERIE ICON-ESM-ER, 2 experiments
+sbatch scripts/pre_process/04_eerie.sh         # EERIE ICON-ESM-ER, 2 experiments (forced: 3 members)
 sbatch scripts/pre_process/05_mpi_er.sh        # MPI-ESM1.2-ER, 3 realizations
 sbatch scripts/pre_process/06_kmscale_zoom.sh  # zoom data for figure 5 (needs 03)
 
@@ -75,7 +75,7 @@ threshold.
 | MPI-ESM1.2-ER | ~10 km | 450 | JJA 2038, member r2 | +0.60 |
 | km-scale ICON (EPOC, transient GHG) | 5 km | 36 | JJA 2002 | +0.59 |
 | km-scale ICON (EPOC, control) | 5 km | 35 | JJA 2005 | +0.53 |
-| EERIE ICON-ESM-ER (hist+ssp245) | 5 km, archived 0.25° | 101 | JJA 2039 | +0.50 |
+| EERIE ICON-ESM-ER (hist+ssp245) | 5 km, archived 0.25° | 187 (3 members) | JJA 2039, member r1 | +0.50 |
 | EERIE ICON-ESM-ER (control) | 5 km, archived 0.25° | 101 | JJA 2041 | +0.61 |
 
 **The raw ranking is an artefact of sample size.** MPI-GE gets 12,550 draws at a
@@ -93,26 +93,26 @@ and MPI-ESM1.2-ER are the same model family differing mainly in ocean
 resolution (~1° vs ~10 km), and the finer one reaches +0.46 against +0.39 on
 equal sampling. The km-scale ICON run's +0.59 out of its own 36 seasons sits
 above MPI-GE's 95th percentile. The ordering is not monotonic in resolution
-overall — EERIE is lowest at +0.35 — but EERIE is only archived at 0.25°, so
+overall — EERIE is lowest at +0.38 — but EERIE is only archived at 0.25°, so
 what is scored there is not its 5 km field.
 
 *Caveat on `best_of_n_bootstrap.csv`:* resampling is with replacement, so for a
 dataset whose record is already only 35–36 seasons the "best-of-35" estimate is
 degenerate (bounded by its own maximum) and is not an independent estimate. Use
 the bootstrap as a **reference distribution from the large-sample datasets**
-(MPI-GE, and EERIE at n=101) and compare the short records' actual maxima
+(MPI-GE, and EERIE at n=187) and compare the short records' actual maxima
 against it, as above.
 
 **A 2026-like pattern is rare everywhere.** Measured against the observed 2003
 analogue, only **1 of 12,550** MPI-GE seasons reaches it — and **0 of 450**
-(MPI-ESM1.2-ER), **0 of 36** (EPOC) and **0 of 101** (EERIE) (figure 3).
+(MPI-ESM1.2-ER), **0 of 36** (EPOC) and **0 of 187** (EERIE) (figure 3).
 
 **It looks like internal variability, not a forced signal.** The constant-forcing
 control runs do as well as their forced counterparts — EERIE control +0.61 vs
 forced +0.50, EPOC control +0.53 vs transient +0.59 — so nothing in the
 greenhouse-gas forcing is generating this pattern. Consistently, each model's
 own nominal JJA 2026 is unremarkable (MPI-GE best member +0.54, 50-member mean
-+0.13; EERIE +0.21), confirming that in free-running simulations the calendar
++0.13; EERIE r1 +0.21 — r2/r3 end before 2026), confirming that in free-running simulations the calendar
 year carries no forecast meaning.
 
 **Figures show one pattern variant.** Removing the box mean and removing the
@@ -228,7 +228,7 @@ are stamped at the *end* of their month, which for `-selmon` is already correct.
 `hist-1950` (1950–2014) + `highres-future-ssp245` (2015–2050) under
 `/work/bm1344/DKRZ/CMOR/EERIE/HighResMIP/MPI-M/ICON-ESM-ER/`, and
 `eerie-control-1950` (1950–2050) under `/pool/data/EERIE/EERIE/MPI-M/`.
-Only `r1i1p1f1` is on disk for the forced runs. Note the archive is stored at
+Only `r1i1p1f1` is in the CMOR tree; members r2 (erc2023, SST 1975–2014) and r3 (erc2024, 1975–2020) are read from the raw 0.25° output under `/work/bm1344/k202193/ICON/` (see `04_eerie.sh`), r2 against a 1991–2014 climatology because its SST stops in 2014. Note the archive is stored at
 0.25°, so the 5 km ocean structure is **not** available here — figure 5 makes
 that explicit.
 
