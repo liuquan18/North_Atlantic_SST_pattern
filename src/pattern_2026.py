@@ -102,6 +102,13 @@ DATASETS = {
                 "eerie_control_jja_anom_na025.nc", "eerie_control_jja_gmsst.nc",
                 "model", "10 km atm / 5 km ocean", (1950, 2050),
                 "constant 1950 forcing"),
+        # sap0006: ICON Sapphire 2.01 tuning run, constant 1950 forcing, HEALPix
+        # zarr output (scripts/pre_process/07_sap0006.sh); 1950-1960 dropped
+        # (spin-up, and a transient solar constant until 1960-07)
+        Dataset("ICON-sap-ctrl", "ICON Sapphire (sap0006, control)",
+                "sap0006_jja_anom_na025.nc", "sap0006_jja_gmsst.nc",
+                "model", "10 km atm / 5 km ocean", (1961, 2049),
+                "constant 1950 forcing, HEALPix zoom 8 (~0.23 deg)"),
     ]
 }
 

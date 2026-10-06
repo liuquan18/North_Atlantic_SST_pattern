@@ -23,6 +23,7 @@ in `data/pattern_2026/`. Stages 01–05 are independent and idempotent.
 | `01_era5.sh` | ERA5 + ERA5T, 1940–2026 |
 | `02_mpige.sh` | MPI-ESM1-2-LR grand ensemble, 50 members (calls `stack_mpige.py`) |
 | `03_epoc_icon.sh` | km-scale ICON (EPOC), control + transient |
+| `07_sap0006.sh` | ICON Sapphire 100-yr control sap0006 from its HEALPix zarr (SST + daily Tmax; `extract_sap0006.py`) |
 | `04_eerie.sh` | EERIE ICON-ESM-ER, control + hist/ssp245 (3 members, stacked by `stack_eerie.py`) |
 | `05_mpi_er.sh` | MPI-ESM1.2-ER, 3 realizations (calls `stack_mpi_er.py`) |
 | `06_kmscale_zoom.sh` | native-resolution zoom fields for figure 5 (needs 01 and 03) |

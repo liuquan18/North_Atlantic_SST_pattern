@@ -24,6 +24,8 @@ The algorithm is in `src/heatwave.py` (tests: `test/test_heatwave.py`).
 | `hw_config.sh` | shared settings, common grid, land mask (sources `../config.sh`) |
 | `01_era5_tmax.sh` | ERA5 hourly 2 m T (`E5/sf/an/1H/167`, ERA5T after 2026-07) → daily max, 1991–2026 |
 | `02_epoc_tmax.sh` | EPOC `epoc2_020` `atm_2d_1d_max` `tas` (R02B08) → 0.25°, 1990–2025 |
+| `06_eerie_ctrl_tmax.sh` | EERIE control `day/tasmax`, 1950–2050 |
+| `07_epoc_tmean.sh` | EPOC daily MEAN T (control: Tmax only on tape; transient: for comparison) |
 | `03_eerie_tmax.sh` | EERIE ICON-ESM-ER: r1 `day/tasmax` (`gr`) 1991–2050; r2, r3 raw `atm_2d_1d_max_remap025` 1991–2020 |
 | `04_mpige_tmax.sh` | MPI-GE (MPI-ESM1-2-LR) CMIP6 `day/tasmax`, 50 members, historical + ssp245, 1850–2100, native grid |
 | `05_heatwave_metrics.py` | heatwave detection → `data/heatwave_2026/<ds>_heatwave_<eu025\|native>.nc`; takes dataset keys as arguments (default: all) |

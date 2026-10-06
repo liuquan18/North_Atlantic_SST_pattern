@@ -62,6 +62,14 @@ DATASETS = {
     "MPI-GE": "mpige",
     "ICON-EPOC-hist": "epoc2_020",
     "EERIE": "eerie_hist_ssp245",
+    # control runs (constant forcing)
+    "EERIE-ctrl": "eerie_control",
+    "ICON-sap-ctrl": "sap0006",            # Tmax = max of 3-hourly instantaneous values
+    # EPOC control: its daily-max files are on tape only, so these heatwaves are
+    # detected in daily MEAN temperature (07_epoc_tmean.sh); the transient run's
+    # Tmean version exists to show what that substitution does
+    "ICON-EPOC-ctrl": "epoc2_010_tmean",
+    "ICON-EPOC-hist-tmean": "epoc2_020_tmean",
 }
 
 #: Datasets with several realizations on the common grid, each read from its
