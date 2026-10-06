@@ -441,3 +441,16 @@ def random_onset_band(series: list[np.ndarray], n_events: int, lag: int, *,
             means[d] = np.nanmean(w, axis=0)
     return np.nanquantile(means, quantiles, axis=0)
 
+
+
+def decluster(idx: np.ndarray, x: np.ndarray, min_separation: int) -> np.ndarray:
+    """
+    Thin event indices `idx` of series `x` so that kept events are at least
+    `min_separation` apart; where two are closer, the one with the higher
+    value wins. Keeps one warm spell from entering a composite several times.
+    """
+    kept: list[int] = []
+    for i in sorted(idx, key=lambda j: x[j], reverse=True):
+        if all(abs(i - k) >= min_separation for k in kept):
+            kept.append(int(i))
+    return np.array(sorted(kept), dtype=int)

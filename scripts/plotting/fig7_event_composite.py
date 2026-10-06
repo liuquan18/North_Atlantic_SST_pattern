@@ -27,6 +27,9 @@ smoothing spreads the event season itself over lags -1..+1 (a box of 1/3 its
 height, drawn dashed), so only a composite that stands above that box near lag
 0, or outside the null band beyond |lag| 1, says anything about persistence.
 
+Onsets in the same member closer than MIN_SEPARATION years are thinned to the
+higher one, so a spell such as EPOC's 2002-2007 is not counted several times.
+
 The threshold is set per record (THRESHOLD): one cut for all would leave the
 single runs with one to three events, too few to composite. Each panel states
 its threshold and event count; with a handful of events the null band is wide
@@ -37,6 +40,7 @@ selected ones: the lag autocorrelation of the internal component.
 import sys
 import warnings
 
+import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
@@ -56,6 +60,9 @@ THRESHOLD = {"MPI-GE": 0.6, "MPI-ER": 0.5, "ERA5": 0.4,
              "ICON-EPOC-hist": 0.4, "ICON-EPOC-ctrl": 0.4,
              "EERIE": 0.4, "EERIE-ctrl": 0.4}
 LAG = 20
+#: label each event line with its year (and member) when a panel has at most
+#: this many events; beyond that the labels would bury the composite
+LABEL_MAX_EVENTS = 6
 #: lags shown; the composite and its null band are computed out to LAG
 XLIM = 15
 #: quantiles of the random-onset composite drawn as the null band
@@ -65,6 +72,9 @@ ACF_LAG = 15
 #: events are still picked on the annual values, which is what "a season that
 #: resembles 2026" means
 SMOOTH = 3
+#: minimum years between two events of the same member; of two closer onsets
+#: the higher one is kept, so one warm spell does not enter the composite twice
+MIN_SEPARATION = 3
 
 
 def member_series(da: xr.DataArray) -> list[np.ndarray]:
@@ -86,6 +96,14 @@ def pooled_acf(series: list[np.ndarray], max_lag: int) -> np.ndarray:
     return out
 
 
+def member_labels(da: xr.DataArray) -> list[str | None]:
+    """Member label per series of member_series(da) ("r12"), None without members."""
+    mdim = p2.member_dim(da)
+    if mdim is None:
+        return [None]
+    return [f"r{int(m)}" for m in vz.valid_members(da, mdim)]
+
+
 def composite(key: str, r: xr.DataArray) -> dict:
     if key == "ERA5":
         # 2026 against itself is 1 by construction -- the reference, not an event
@@ -95,7 +113,7 @@ def composite(key: str, r: xr.DataArray) -> dict:
 
     threshold = THRESHOLD[key]
     rule = f"r ≥ {threshold:.2f}"
-    onsets = [p2.event_onsets(x, threshold) for x in raw]
+    onsets = [p2.decluster(p2.event_onsets(x, threshold), x, MIN_SEPARATION) for x in raw]
 
     # annual lag-0 height, for the "spike alone" reference: a single-season
     # spike of height h, smoothed, is a box of h/SMOOTH over |lag| <= SMOOTH//2
@@ -107,9 +125,16 @@ def composite(key: str, r: xr.DataArray) -> dict:
     band = p2.random_onset_band(smoothed, n, LAG, quantiles=NULL_RANGE)
     count = np.isfinite(windows).sum(0)
     with np.errstate(invalid="ignore"):
-        mean = np.where(count >= min(3, n), np.nanmean(windows, 0), np.nan)
+        # drawn wherever at least 2 events have a value: with only 3 events,
+        # requiring all of them would cut the line at the first event that
+        # runs into a record's end (ERA5 2025, EPOC 2022)
+        mean = np.where(count >= min(2, n), np.nanmean(windows, 0), np.nan)
     n_seasons = int(sum(np.isfinite(x).sum() for x in internal))
+    years = r["year"].values
+    labels = [f"{m} {years[i]}" if m else str(years[i])
+              for m, o in zip(member_labels(r), onsets) for i in o]
     return dict(windows=windows, mean=mean, band=band, n=n, rule=rule, spike=spike,
+                labels=labels,
                 acf=pooled_acf(internal, ACF_LAG), n_seasons=n_seasons,
                 n_series=len(internal))
 
@@ -126,8 +151,23 @@ def draw_composite(ax, key: str, c: dict):
 
     # many events: faint, so the mean stays readable; few: each one matters
     alpha = 0.16 if c["n"] > 15 else 0.45
-    for w in c["windows"]:
+    tags = []
+    for w, label in zip(c["windows"], c["labels"]):
         ax.plot(lags, w, color=color, lw=0.6, alpha=alpha, zorder=3)
+        # tag each line at its last value inside the axis
+        shown = np.flatnonzero(np.isfinite(w) & (np.abs(lags) <= XLIM))
+        if c["n"] <= LABEL_MAX_EVENTS and len(shown):
+            tags.append([lags[shown[-1]], w[shown[-1]], label])
+    # lines ending at the same lag would stack their tags: spread those apart
+    gap = 0.045
+    for x in {t[0] for t in tags}:
+        group = sorted((t for t in tags if t[0] == x), key=lambda t: t[1])
+        for lo, hi in zip(group, group[1:]):
+            hi[1] = max(hi[1], lo[1] + gap)
+    for x, y, label in tags:
+        ax.text(x, y, label, fontsize=6.6, color=color, alpha=0.75, ha="right",
+                va="bottom", zorder=6, clip_on=True,
+                path_effects=[pe.withStroke(linewidth=2.2, foreground=vz.SURFACE)])
     ax.plot([], [], color=color, lw=0.6, alpha=0.6, label="single events")
     ax.plot(lags, c["mean"], color=color, lw=2.0, ls=vz.LINESTYLES[key], zorder=5,
             label="composite mean")
@@ -211,7 +251,7 @@ def main():
                  fontsize=12, color=vz.INK, y=1 - 0.25 / fig_h)
     fig.text(0.5, 1 - 0.5 / fig_h,
              f"pattern correlation with ERA5 JJA 2026 (box mean removed), aligned on the season it "
-             f"first reaches the threshold  ·  {SMOOTH}-yr running mean before compositing\n"
+             f"first reaches the threshold (≥ {MIN_SEPARATION} yr apart)  ·  {SMOOTH}-yr running mean before compositing\n"
              "forced part removed: 50-member mean (MPI-GE), "
              "record mean (controls), linear/quadratic trend (other runs)  ·  "
              f"dots: outside the random-onset band, |lag| > {SMOOTH // 2}",

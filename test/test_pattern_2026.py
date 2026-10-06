@@ -146,3 +146,8 @@ def test_random_onset_band_brackets_zero_for_noise():
 def test_running_mean_is_centred_and_nan_at_the_edges():
     out = p2.running_mean(np.arange(5.0), 3)
     assert np.array_equal(out, [np.nan, 1, 2, 3, np.nan], equal_nan=True)
+
+
+def test_decluster_keeps_the_higher_of_close_events():
+    x = np.array([0.0, 0.5, 0.0, 0.6, 0.0, 0.0, 0.0, 0.45])
+    assert list(p2.decluster(np.array([1, 3, 7]), x, 3)) == [3, 7]

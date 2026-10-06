@@ -63,7 +63,7 @@ def main():
                  fontsize=12, color=vz.INK, y=1 - 0.18 / fig_h)
     fig.text(0.5, 1 - 0.5 / fig_h,
              f"pattern correlation with ERA5 JJA 2026 (box mean removed), aligned on the season "
-             f"it first reaches the threshold  ·  {f7.SMOOTH}-yr running mean before compositing\n"
+             f"it first reaches the threshold (≥ {f7.MIN_SEPARATION} yr apart)  ·  {f7.SMOOTH}-yr running mean before compositing\n"
              "forced part removed: 50-member mean (MPI-GE), linear/quadratic trend (other runs)  ·  "
              f"dots: outside the random-onset band, |lag| > {f7.SMOOTH // 2}",
              ha="center", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.5)
