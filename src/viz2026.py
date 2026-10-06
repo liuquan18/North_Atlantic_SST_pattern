@@ -129,7 +129,7 @@ def map_projection():
 
 
 def panel_aspect(extent=None):
-    """Width / height of one map panel in the Mercator projection above."""
+    """Width / height of one map panel in a Mercator projection."""
     import numpy as np
     lon0, lon1, lat0, lat1 = extent or MAP_EXTENT
 
@@ -162,6 +162,64 @@ def draw_map(ax, field, levels, cmap, extent=None, *, labels_bottom=False,
     gl.left_labels = labels_left
     gl.xlabel_style = gl.ylabel_style = {"size": 7, "color": INK_SOFT}
     return im
+
+
+#: Europe view for land fields (heatwaves). The data grid is wider (30-72N,
+#: 15W-45E); this crops most of North Africa so the panel reads as Europe.
+EUROPE_EXTENT = [-12, 42, 35, 70]
+OCEAN = "#eef0f2"
+
+
+def europe_projection():
+    import cartopy.crs as ccrs
+    return ccrs.Mercator(central_longitude=15, min_latitude=25, max_latitude=75)
+
+
+def draw_land_map(ax, field, cmap, norm, extent=None, *, labels_bottom=False,
+                  labels_left=False, lon_step=10, lat_step=10, land_under=False):
+    """
+    A land-only field (NaN over sea) drawn cell by cell, with the sea filled
+    flat. Unlike draw_map, nothing is painted over land, since land is where
+    the data is. Pass field=None for an empty panel (sea and coastline only).
+
+    land_under=True paints land grey *beneath* the field, so land cells that
+    are NaN (e.g. "no heatwave" for intensity or onset) read as grey rather
+    than blank.
+    """
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+
+    pc = ccrs.PlateCarree()
+    extent = extent or EUROPE_EXTENT
+    ax.add_feature(cfeature.OCEAN, facecolor=OCEAN, zorder=0)
+    if land_under:
+        ax.add_feature(cfeature.LAND, facecolor=LAND, zorder=0.5)
+    im = None
+    if field is not None:
+        im = ax.pcolormesh(field.lon, field.lat, field.values, cmap=cmap, norm=norm,
+                           shading="nearest", transform=pc, zorder=1, rasterized=True)
+    ax.coastlines(resolution="50m", linewidth=0.4, color=COAST, zorder=3)
+    ax.add_feature(cfeature.BORDERS, linewidth=0.25, edgecolor=COAST, alpha=0.6, zorder=3)
+    ax.set_extent(extent, crs=pc)
+
+    lon0, lon1, lat0, lat1 = extent
+    gl = ax.gridlines(draw_labels=labels_bottom or labels_left, linewidth=0.4,
+                      color="#ffffff", alpha=0.55, zorder=4,
+                      xlocs=range(-20, 61, lon_step), ylocs=range(30, 81, lat_step))
+    gl.top_labels = gl.right_labels = False
+    gl.bottom_labels = labels_bottom
+    gl.left_labels = labels_left
+    gl.xlabel_style = gl.ylabel_style = {"size": 7, "color": INK_SOFT}
+    return im
+
+
+def heatwave_cmap():
+    """Sequential, light at zero: cmocean 'amp' (perceptually uniform), else YlOrRd."""
+    try:
+        import cmocean
+        return cmocean.cm.amp
+    except ImportError:
+        return plt.get_cmap("YlOrRd")
 
 
 def panel_tag(ax, text, loc="lower left"):

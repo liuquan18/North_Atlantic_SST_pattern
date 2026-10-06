@@ -7,6 +7,7 @@ Methodology, data traps and results: [doc/pattern_2026.md](../doc/pattern_2026.m
 scripts/
 ├── config.sh          shared settings (region, climatology, paths, common grid, conda env)
 ├── run_analysis.sh    runs analysis/ then plotting/ in order
+├── european_heatwave/ daily Tmax -> JJA heatwave metrics -> data/heatwave_2026/ (see its README)
 ├── pre_process/       cdo stages, submitted with sbatch; raw model/obs data -> data/pattern_2026/
 ├── analysis/          pattern correlation and region means -> data/pattern_2026/results/
 └── plotting/          one script per figure -> figures/pattern_2026/
@@ -36,6 +37,6 @@ in `data/pattern_2026/`. Stages 01–05 are independent and idempotent.
 ## plotting/
 
 `fig1_patterns.py` … `fig6_region_means.py`, one per figure. Figures 1–4 need
-`analysis/01`, figure 5 needs `pre_process/06`, figure 6 needs `analysis/02`.
+`analysis/01`; figure 1 also needs `european_heatwave/` (its top row), figure 5 needs `pre_process/06`, figure 6 needs `analysis/02`.
 
 SLURM logs go to `logs/` at the project root.
