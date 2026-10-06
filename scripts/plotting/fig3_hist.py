@@ -6,7 +6,7 @@ end of the century, and ERA5 itself as the first row.
   ERA5, MPI-GE,    upper: 1990-2025, lower: pre-1980, i.e. as much of
   MPI-ER           1850-1979 as the record covers (ERA5 1940-1979,
                    MPI-ER 1950-1979)
-  EPOC, EERIE      as in figure 3: upper forced run, lower control
+  EPOC, EERIE      upper: forced run over 1990-2025, lower: whole control run
 """
 import sys
 
@@ -59,8 +59,6 @@ def half_violin(ax, vals, y, color, upper):
     yb = y + sign * 0.07
     ax.plot([q1, q3], [yb, yb], color=color, lw=2.6, solid_capstyle="butt", zorder=5)
     ax.plot([med], [yb], marker="|", ms=7, color=vz.SURFACE, mew=1.6, zorder=6)
-    ax.plot([vals.max()], [yb], marker="o", ms=4.5,
-            mfc=color if upper else vz.SURFACE, mec=color, mew=1.1, zorder=6)
 
 
 def build_hist_rows(corr):
@@ -77,8 +75,11 @@ def build_hist_rows(corr):
     for fk, ck, label, fl, cl in pairs:
         if fk in corr and ck in corr:
             f, c = corr[fk], corr[ck]
+            # forced runs over the same 1990-2025 window as the rows above
+            # (EPOC covers exactly that; EERIE runs 1950-2050)
+            fv, flab = _period(f, *RECENT)
             rows.append((label, vz.COLORS[fk],
-                         (_vals(f), f"{fl} {_years(f)[0]}\u2013{_years(f)[-1]}"),
+                         (fv, f"{fl} {flab}"),
                          (_vals(c), f"{cl} {_years(c)[0]}\u2013{_years(c)[-1]}")))
     return rows
 
@@ -121,6 +122,7 @@ def main():
             if label == p2.DATASETS["ERA5"].label:
                 # the best observed season is the upper half's dot
                 yb = y + 0.07
+                ax.plot([obs_ref], [yb], marker="o", ms=4.5, color=vz.INK, zorder=6)
                 ax.annotate(f"JJA {obs_year}", (obs_ref, yb), xytext=(0, 7),
                             textcoords="offset points", ha="center", va="bottom",
                             fontsize=7.6, color=vz.INK)
@@ -140,7 +142,7 @@ def main():
              f"upper half: {RECENT[0]}–{RECENT[1]} / forced run  ·  "
              f"lower half: before {EARLY[1] + 1} / control  ·  "
              f"{p2.VARIANTS[variants[0]]['long']}  ·  "
-             "bar = IQR, tick = median, dot = best season",
+             "bar = IQR, tick = median",
              ha="center", fontsize=8.2, color=vz.INK_SOFT)
 
     out = p2.FIG_DIR / "fig3_hist_correlation_distribution.png"
