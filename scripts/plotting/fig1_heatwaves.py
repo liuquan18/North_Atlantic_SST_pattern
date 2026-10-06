@@ -40,7 +40,7 @@ sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import src.pattern_2026 as p2
 import src.viz2026 as vz
-from fig1_patterns import heatwave_season, land_mean, season
+from fig1_patterns_simulations import heatwave_season, land_mean, season
 
 COLUMNS = [("ERA5", "ref"), ("ERA5", "best"), ("MPI-GE", "best"),
            ("ICON-EPOC-hist", "best"), ("EERIE", "best")]

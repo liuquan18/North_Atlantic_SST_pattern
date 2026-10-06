@@ -1,16 +1,17 @@
 """
-Figure 1 -- European summer heatwaves and the North Atlantic + Mediterranean
-SST pattern, season by season.
+Figure 1 (simulations) -- European summer heatwaves and the North Atlantic +
+Mediterranean SST pattern in the season of each model that best matches
+ERA5 JJA 2026.
 
-Columns: ERA5 JJA 2026 (the reference), ERA5's closest earlier summer, and the
-best-matching season of MPI-GE, MPI-ESM1.2-ER, km-scale ICON (EPOC) and EERIE.
-MPI-GE's heatwave panel is on the model's native ~1.9 deg grid, so its cells
+Columns: the best-matching season of MPI-GE, MPI-ESM1.2-ER, km-scale ICON
+(EPOC) and EERIE. The ERA5 seasons are in fig1_patterns_era5.py, which draws
+with plot_figure() from here. MPI-GE's heatwave panel is on the model's native ~1.9 deg grid, so its cells
 are drawn at the resolution the model actually has.
 
   top row     JJA heatwave days over European land (Xu et al. 2026 definition,
               1991-2020 reference; scripts/european_heatwave/)
   bottom row  the SST pattern of the same season (box mean removed), with its
-              pattern correlation against JJA 2026
+              pattern correlation against ERA5 JJA 2026
 
 So each column asks: in the season whose SST pattern looks most like 2026,
 what did European summer heat look like? MPI-ESM1.2-ER has no daily
@@ -37,8 +38,7 @@ import src.viz2026 as vz
 VARIANT = p2.PLOT_VARIANTS[0]
 VMAX_CAP = 2.0
 #: (dataset, which season): "ref" = JJA 2026 itself, "best" = best analogue
-COLUMNS = [("ERA5", "ref"), ("ERA5", "best"), ("MPI-GE", "best"), ("MPI-ER", "best"),
-           ("ICON-EPOC-hist", "best"), ("EERIE", "best")]
+COLUMNS = [("MPI-GE", "best"), ("MPI-ER", "best"), ("ICON-EPOC-hist", "best"), ("EERIE", "best")]
 HWD_LEVELS = np.arange(0, 46, 5)
 
 
@@ -80,19 +80,19 @@ def land_mean(field, extent=None):
     return float((field.fillna(0) * w).sum() / w.sum())
 
 
-def main():
+def column(key, year, member, r, title):
+    """One figure column: its title, SST pattern, heatwave days and r."""
+    hws = heatwave_season(key, year, member)
+    if hws is None:
+        print(f"!! {key} JJA {year}: no heatwave field")
+    return dict(title=title, sst=sst_field(key, year, member), r=r,
+                hwd=None if hws is None else hws.hwd)
+
+
+def plot_figure(cols, suptitle, out):
+    """Heatwave days (top) over SST pattern (bottom), one column per season."""
     vz.use_style()
     p2.FIG_DIR.mkdir(parents=True, exist_ok=True)
-    best = pd.read_csv(p2.RESULT_DIR / "best_analogues.csv")
-
-    cols = []
-    for key, which in COLUMNS:
-        year, mem, r = season(key, which, best)
-        hws = heatwave_season(key, year, mem)
-        cols.append(dict(key=key, which=which, year=year, member=mem, r=r,
-                         sst=sst_field(key, year, mem), hwd=None if hws is None else hws.hwd))
-        if cols[-1]["hwd"] is None:
-            print(f"!! {key} JJA {year}: no heatwave field")
 
     vmax = min(VMAX_CAP, max(float(np.nanpercentile(np.abs(c["sst"].values), 98)) for c in cols))
     vmax = np.round(vmax * 2) / 2
@@ -109,21 +109,19 @@ def main():
     h_bot = panel_w / vz.panel_aspect()
     h_top = 1.3 * h_bot
     fig_w = panel_w * n + 2.0
-    fig_h = h_top + h_bot + 2.4
+    # head room for the column titles: ~0.18 in per title line beyond the first
+    title_h = 0.18 * max(c["title"].count("\n") for c in cols)
+    top_h = 1.39 + title_h
+    fig_h = h_top + h_bot + top_h + 0.65
 
     fig = plt.figure(figsize=(fig_w, fig_h))
     gs = GridSpec(2, n + 1, figure=fig,
                   width_ratios=[1] * n + [0.035], height_ratios=[h_top, h_bot],
                   hspace=0.32, wspace=0.07,
-                  left=0.075, right=0.94, top=1 - 1.75 / fig_h, bottom=0.42 / fig_h)
+                  left=0.075, right=0.94, top=1 - top_h / fig_h, bottom=0.42 / fig_h)
 
     im_hw = None
     for j, c in enumerate(cols):
-        d = p2.DATASETS[c["key"]]
-        when = f"JJA {c['year']}" + (f"  ·  member r{c['member']}" if c["member"] else "")
-        if c["which"] == "ref":
-            when += "  ·  observed"
-
         # --- top: heatwave days -------------------------------------------
         ax = fig.add_subplot(gs[0, j], projection=vz.europe_projection())
         im = vz.draw_land_map(ax, c["hwd"], hw_cmap, hw_norm, lon_step=20,
@@ -131,11 +129,7 @@ def main():
         im_hw = im or im_hw
         # the season is shared by both rows, so it heads the column; the
         # in-map tags then carry only each row's own number
-        sub = d.resolution
-        if c["key"] == "ERA5":
-            sub = "reference season" if c["which"] == "ref" else "closest earlier summer"
-        ax.set_title(f"{d.label}\n{sub}\n{when}", pad=5, fontsize=8.6,
-                     color=vz.INK, linespacing=1.3)
+        ax.set_title(c["title"], pad=5, fontsize=8.6, color=vz.INK, linespacing=1.3)
         if c["hwd"] is None:
             ax.text(0.5, 0.5, "no daily\nTmax output", transform=ax.transAxes,
                     ha="center", va="center", fontsize=7.5, color=vz.INK_SOFT, zorder=6,
@@ -163,21 +157,31 @@ def main():
     for ax in fig.axes[-2:]:
         ax.tick_params(labelsize=7.5)
 
-    fig.suptitle("European summer heatwaves and the North Atlantic + Mediterranean SST pattern: "
-                 "JJA 2026 and the closest season each dataset produces",
-                 fontsize=12, color=vz.INK, y=1 - 0.30 / fig_h)
+    fig.suptitle(suptitle, fontsize=12, color=vz.INK, y=1 - 0.30 / fig_h)
     fig.text(0.5, 1 - 0.62 / fig_h,
              "heatwave: ≥3 consecutive days with Tmax anomaly above the calendar-day 90th percentile "
              "(15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
              "top-row value: land-mean heatwave days\n"
-             f"SST: {p2.VARIANTS[VARIANT]['long']}, 30–60°N, 80°W–40°E, r = pattern correlation with JJA 2026  ·  "
+             f"SST: {p2.VARIANTS[VARIANT]['long']}, 30–60°N, 80°W–40°E, r = pattern correlation with ERA5 JJA 2026  ·  "
              "both against 1991–2020 of the same dataset",
              ha="center", va="top", fontsize=8.3, color=vz.INK_SOFT, linespacing=1.4)
 
-    out = p2.FIG_DIR / "fig1_patterns_2026.png"
     fig.savefig(out)
     fig.savefig(out.with_suffix(".pdf"))
     print(f"wrote {out}  (SST scale ±{vmax} °C)")
+
+
+def main():
+    best = pd.read_csv(p2.RESULT_DIR / "best_analogues.csv")
+    cols = []
+    for key, which in COLUMNS:
+        year, mem, r = season(key, which, best)
+        d = p2.DATASETS[key]
+        when = f"JJA {year}" + (f"  ·  member r{mem}" if mem else "")
+        cols.append(column(key, year, mem, r, f"{d.label}\n{d.resolution}\n{when}"))
+    plot_figure(cols, "European summer heatwaves and the North Atlantic + Mediterranean SST pattern: "
+                      f"the season of each model closest to ERA5 JJA {p2.REF_YEAR}",
+                p2.FIG_DIR / "fig1_patterns_2026_simulations.png")
 
 
 if __name__ == "__main__":
