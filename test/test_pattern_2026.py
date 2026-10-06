@@ -143,9 +143,6 @@ def test_random_onset_band_brackets_zero_for_noise():
     assert np.all(lo < 0) and np.all(hi > 0)
 
 
-def test_largest_events_takes_the_top_and_declusters():
-    a = np.array([0.1, 0.9, 0.8, 0.2, 0.1, 0.1, 0.7])
-    b = np.array([0.85, np.nan, 0.3])
-    # 0.8 at a[2] sits next to a[1]=0.9 and is skipped
-    out = p2.largest_events([a, b], 3, min_separation=3)
-    assert [list(o) for o in out] == [[1, 6], [0]]
+def test_running_mean_is_centred_and_nan_at_the_edges():
+    out = p2.running_mean(np.arange(5.0), 3)
+    assert np.array_equal(out, [np.nan, 1, 2, 3, np.nan], equal_nan=True)

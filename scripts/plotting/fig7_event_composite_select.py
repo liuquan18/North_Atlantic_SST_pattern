@@ -2,7 +2,7 @@
 Figure 7 (select) -- the event composites of figure 7 for the observations and
 the forced runs only.
 
-Same method, event selection, smoothing and null band as fig7_event_composite.py
+Same method, thresholds, smoothing and null band as fig7_event_composite.py
 (everything is imported from there); this version drops the two control runs
 and the autocorrelation panel and lays the rest out as observations and the
 MPI-ESM pair on top, the two km-scale ICON runs below. The empty sixth slot
@@ -62,10 +62,10 @@ def main():
     fig.suptitle("Do seasons that resemble JJA 2026 come in decadal spells?",
                  fontsize=12, color=vz.INK, y=1 - 0.18 / fig_h)
     fig.text(0.5, 1 - 0.5 / fig_h,
-             f"pattern correlation with ERA5 JJA 2026 (box mean removed), {f7.event_text()}  ·  "
-             f"{f7.SMOOTH}-yr running mean before compositing\n"
+             f"pattern correlation with ERA5 JJA 2026 (box mean removed), aligned on the season "
+             f"it first reaches the threshold  ·  {f7.SMOOTH}-yr running mean before compositing\n"
              "forced part removed: 50-member mean (MPI-GE), linear/quadratic trend (other runs)  ·  "
-             f"dots: outside the random-event band, |lag| > {f7.SMOOTH // 2}",
+             f"dots: outside the random-onset band, |lag| > {f7.SMOOTH // 2}",
              ha="center", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.5)
 
     out = p2.FIG_DIR / "fig7_event_composite_select.png"

@@ -4,11 +4,11 @@ Figure 7 -- is there decadal persistence in the resemblance to JJA 2026?
 Figure 2 hints at slow swings in the pattern correlation, but the ensemble
 envelope hides any single member's history. This figure asks the question
 directly with a superposed-epoch composite: find every season where a record
-looks like 2026 (by default the N_EVENTS highest seasons), align those seasons at
-lag 0, and look at the 20 seasons either side. If the resemblance is carried
-by slow ocean variability, the composite should rise ahead of lag 0 and decay
-over several years after it; if it is weather-like, it should spike at lag 0
-and nowhere else.
+starts to look like 2026 (r reaches a per-record threshold from below), align
+those seasons at lag 0, and look at the 20 seasons either side. If the
+resemblance is carried by slow ocean variability, the composite should rise
+ahead of lag 0 and decay over several years after it; if it is weather-like,
+it should spike at lag 0 and nowhere else.
 
 Two choices keep the composite honest:
 
@@ -27,13 +27,10 @@ smoothing spreads the event season itself over lags -1..+1 (a box of 1/3 its
 height, drawn dashed), so only a composite that stands above that box near lag
 0, or outside the null band beyond |lag| 1, says anything about persistence.
 
-Events are the N_EVENTS highest seasons of each record, at least
-MIN_SEPARATION years apart within a member, so every panel composites the same
-number of events whatever its length or ensemble size. With N_EVENTS = None
-they are instead the onsets of a per-record threshold (THRESHOLD): the first
-season of each run of seasons at or above it. Each panel states its rule; with
-a handful of events the null band is wide and the composite is suggestive at
-best.
+The threshold is set per record (THRESHOLD): one cut for all would leave the
+single runs with one to three events, too few to composite. Each panel states
+its threshold and event count; with a handful of events the null band is wide
+and the composite is suggestive at best.
 The last panel gives the same answer from every season rather than the
 selected ones: the lag autocorrelation of the internal component.
 """
@@ -58,8 +55,6 @@ LAYOUT = ["ERA5", "ICON-EPOC-hist", "EERIE", "MPI-GE",
 THRESHOLD = {"MPI-GE": 0.6, "MPI-ER": 0.5, "ERA5": 0.4,
              "ICON-EPOC-hist": 0.4, "ICON-EPOC-ctrl": 0.4,
              "EERIE": 0.4, "EERIE-ctrl": 0.4}
-#: events per record: the N highest seasons (None: use THRESHOLD instead)
-N_EVENTS = 4
 LAG = 20
 #: lags shown; the composite and its null band are computed out to LAG
 XLIM = 15
@@ -70,27 +65,6 @@ ACF_LAG = 15
 #: events are still picked on the annual values, which is what "a season that
 #: resembles 2026" means
 SMOOTH = 3
-#: minimum years between two events of the same member: the smoothing width,
-#: so no two events share a smoothed season at lag 0. Wider is too strict for
-#: the 36-yr EPOC records, whose high seasons come within a few years of each
-#: other (5 yr would pull in a season with r = 0.06)
-MIN_SEPARATION = SMOOTH
-
-
-def event_text() -> str:
-    """How events are picked, for figure subtitles."""
-    if N_EVENTS:
-        return (f"aligned on each record's {N_EVENTS} highest seasons "
-                f"(≥ {MIN_SEPARATION} yr apart within a member)")
-    return "aligned on the season it first reaches the threshold"
-
-
-def running_mean(x: np.ndarray, width: int = SMOOTH) -> np.ndarray:
-    """Centred running mean; NaN wherever the window is not complete."""
-    out = np.full(len(x), np.nan)
-    if len(x) >= width:
-        out[width // 2: len(x) - width // 2] = np.convolve(x, np.ones(width) / width, "valid")
-    return out
 
 
 def member_series(da: xr.DataArray) -> list[np.ndarray]:
@@ -119,20 +93,15 @@ def composite(key: str, r: xr.DataArray) -> dict:
     anom = p2.internal_component(r, control=key.endswith("-ctrl"))
     raw, internal = member_series(r), member_series(anom)
 
-    if N_EVENTS:
-        onsets = p2.largest_events(raw, N_EVENTS, MIN_SEPARATION)
-        lowest = min(x[o].min() for x, o in zip(raw, onsets) if len(o))
-        rule = f"{N_EVENTS} highest seasons, r ≥ {lowest:.2f}"
-    else:
-        threshold = THRESHOLD[key]
-        onsets = [p2.event_onsets(x, threshold) for x in raw]
-        rule = f"onsets of r ≥ {threshold:.2f}"
+    threshold = THRESHOLD[key]
+    rule = f"r ≥ {threshold:.2f}"
+    onsets = [p2.event_onsets(x, threshold) for x in raw]
 
     # annual lag-0 height, for the "spike alone" reference: a single-season
     # spike of height h, smoothed, is a box of h/SMOOTH over |lag| <= SMOOTH//2
     spike = float(np.nanmean(np.concatenate(
         [x[o] for x, o in zip(internal, onsets) if len(o)])))
-    smoothed = [running_mean(x) for x in internal]
+    smoothed = [p2.running_mean(x, SMOOTH) for x in internal]
     windows = np.concatenate([p2.epoch_windows(x, o, LAG) for x, o in zip(smoothed, onsets)])
     n = len(windows)
     band = p2.random_onset_band(smoothed, n, LAG, quantiles=NULL_RANGE)
@@ -153,7 +122,7 @@ def draw_composite(ax, key: str, c: dict):
     ax.axvline(0, color=vz.INK_MUTED, lw=0.6, ls=":", zorder=1)
     ax.grid(axis="y", zorder=0)
     ax.fill_between(lags, c["band"][0], c["band"][1], color=vz.CONTEXT, alpha=0.35,
-                    lw=0, zorder=2, label=f"random events, {NULL_RANGE[0]:.0%}–{NULL_RANGE[1]:.0%}")
+                    lw=0, zorder=2, label=f"random onsets, {NULL_RANGE[0]:.0%}–{NULL_RANGE[1]:.0%}")
 
     # many events: faint, so the mean stays readable; few: each one matters
     alpha = 0.16 if c["n"] > 15 else 0.45
@@ -174,11 +143,11 @@ def draw_composite(ax, key: str, c: dict):
             mec=vz.SURFACE, mew=0.8, zorder=6)
 
     ax.set_title(p2.DATASETS[key].label, fontsize=9, color=vz.INK, pad=5, loc="left")
-    vz.panel_tag(ax, f"{c['rule']}" if N_EVENTS else f"{c['n']} {c['rule']}", loc="upper left")
+    vz.panel_tag(ax, f"{c['n']} onsets of {c['rule']}", loc="upper left")
     ax.set_xlim(-XLIM, XLIM)
     ax.set_ylim(-0.32, 0.42)
     ax.set_xticks(np.arange(-XLIM, XLIM + 1, 5))
-    ax.set_xlabel("years from event")
+    ax.set_xlabel("years from onset")
 
 
 def main():
@@ -241,11 +210,11 @@ def main():
     fig.suptitle("Do seasons that resemble JJA 2026 come in decadal spells?",
                  fontsize=12, color=vz.INK, y=1 - 0.25 / fig_h)
     fig.text(0.5, 1 - 0.5 / fig_h,
-             f"pattern correlation with ERA5 JJA 2026 (box mean removed), {event_text()}  ·  "
-             f"{SMOOTH}-yr running mean before compositing\n"
+             f"pattern correlation with ERA5 JJA 2026 (box mean removed), aligned on the season it "
+             f"first reaches the threshold  ·  {SMOOTH}-yr running mean before compositing\n"
              "forced part removed: 50-member mean (MPI-GE), "
              "record mean (controls), linear/quadratic trend (other runs)  ·  "
-             f"dots: outside the random-event band, |lag| > {SMOOTH // 2}",
+             f"dots: outside the random-onset band, |lag| > {SMOOTH // 2}",
              ha="center", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.5)
 
     for key in keys:

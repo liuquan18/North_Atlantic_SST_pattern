@@ -406,6 +406,17 @@ def epoch_windows(x: np.ndarray, onsets: np.ndarray, lag: int) -> np.ndarray:
     return padded[idx] if len(onsets) else np.empty((0, 2 * lag + 1))
 
 
+def running_mean(x: np.ndarray, width: int) -> np.ndarray:
+    """Centred running mean; NaN wherever the window is not complete."""
+    x = np.asarray(x, dtype=float)
+    out = np.full(len(x), np.nan)
+    if width <= 1:
+        return x.copy()
+    if len(x) >= width:
+        out[width // 2: len(x) - width // 2] = np.convolve(x, np.ones(width) / width, "valid")
+    return out
+
+
 def random_onset_band(series: list[np.ndarray], n_events: int, lag: int, *,
                       n_draws: int = 2000, quantiles=(0.05, 0.95),
                       seed: int = 0) -> np.ndarray:
@@ -430,23 +441,3 @@ def random_onset_band(series: list[np.ndarray], n_events: int, lag: int, *,
             means[d] = np.nanmean(w, axis=0)
     return np.nanquantile(means, quantiles, axis=0)
 
-
-def largest_events(series: list[np.ndarray], n: int, min_separation: int) -> list[np.ndarray]:
-    """
-    The `n` highest seasons across all `series` (members), as indices per series.
-
-    Picked greedily from the top; a season within `min_separation` years of one
-    already picked in the same series is skipped, so a single warm spell cannot
-    supply several events. Returns one sorted index array per series.
-    """
-    cand = sorted(((x[j], i, j) for i, x in enumerate(series)
-                   for j in np.flatnonzero(np.isfinite(x))), reverse=True)
-    picked: list[list[int]] = [[] for _ in series]
-    count = 0
-    for _, i, j in cand:
-        if count == n:
-            break
-        if all(abs(j - k) >= min_separation for k in picked[i]):
-            picked[i].append(j)
-            count += 1
-    return [np.array(sorted(p), dtype=int) for p in picked]
