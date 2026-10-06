@@ -13,6 +13,7 @@ python3 "${SCRIPTS}/analysis/02_region_means.py"
 
 python3 "${SCRIPTS}/plotting/fig1_patterns_era5.py"
 python3 "${SCRIPTS}/plotting/fig1_patterns_simulations.py"
+python3 "${SCRIPTS}/plotting/fig1_heatwave_analogues.py"
 python3 "${SCRIPTS}/plotting/fig2_corr_timeseries.py"
 python3 "${SCRIPTS}/plotting/fig2_corr_timeseries_short.py"
 python3 "${SCRIPTS}/plotting/fig3_distribution.py"

@@ -23,6 +23,7 @@ washes the Atlantic part of the pattern out to near-white.
 """
 import sys
 
+import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -89,8 +90,15 @@ def column(key, year, member, r, title):
                 hwd=None if hws is None else hws.hwd)
 
 
-def plot_figure(cols, suptitle, out):
-    """Heatwave days (top) over SST pattern (bottom), one column per season."""
+def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwave days",
+                lat_line=None):
+    """
+    Heatwave days (top) over SST pattern (bottom), one column per season.
+
+    A column may carry its own "hw_tag" for the heatwave panel (default: the
+    land-mean heatwave days); `lat_line` draws a dashed parallel on the
+    heatwave maps, e.g. to mark a sub-region the tag refers to.
+    """
     vz.use_style()
     p2.FIG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -136,7 +144,11 @@ def plot_figure(cols, suptitle, out):
                     bbox=dict(facecolor="#ffffff", alpha=0.9, edgecolor="none",
                               boxstyle="round,pad=0.4"))
         else:
-            vz.panel_tag(ax, f"{land_mean(c['hwd']):.1f} days", loc="upper right")
+            vz.panel_tag(ax, c.get("hw_tag") or f"{land_mean(c['hwd']):.1f} days",
+                         loc="upper right")
+        if lat_line is not None:
+            ax.plot([-180, 180], [lat_line, lat_line], transform=ccrs.PlateCarree(),
+                    color=vz.INK, lw=0.9, ls=(0, (4, 3)), zorder=5)
 
         # --- bottom: SST pattern ------------------------------------------
         ax = fig.add_subplot(gs[1, j], projection=vz.map_projection())
@@ -161,7 +173,7 @@ def plot_figure(cols, suptitle, out):
     fig.text(0.5, 1 - 0.62 / fig_h,
              "heatwave: ≥3 consecutive days with Tmax anomaly above the calendar-day 90th percentile "
              "(15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
-             "top-row value: land-mean heatwave days\n"
+             f"{hw_note}\n"
              f"SST: {p2.VARIANTS[VARIANT]['long']}, 30–60°N, 80°W–40°E, r = pattern correlation with ERA5 JJA 2026  ·  "
              "both against 1991–2020 of the same dataset",
              ha="center", va="top", fontsize=8.3, color=vz.INK_SOFT, linespacing=1.4)
