@@ -9,7 +9,7 @@ state and the lower half another, so a shift of the distribution with warming
 reads directly as an asymmetry between the two halves.
 
   MPI-GE, MPI-ER   upper: last 30 years of the record, lower: first 30 years
-  EPOC, EERIE      upper: forced run (transient GHG / hist+ssp245),
+  EPOC, EERIE      upper: forced run (hist+ssp585 / hist+ssp245),
                    lower: constant-forcing control
 
 The benchmark line is taken from the observations themselves: the highest
@@ -61,7 +61,7 @@ def build_rows(corr):
             rows.append((p2.DATASETS[key].label, vz.COLORS[key],
                          _window(corr[key], False), _window(corr[key], True)))
     pairs = [("ICON-EPOC-hist", "ICON-EPOC-ctrl", "km-scale ICON (EPOC)",
-              "transient GHG", "control"),
+              "hist+ssp585", "control"),
              ("EERIE", "EERIE-ctrl", "EERIE ICON-ESM-ER",
               "hist+ssp245", "control")]
     for fk, ck, label, fl, cl in pairs:

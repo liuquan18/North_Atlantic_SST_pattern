@@ -69,7 +69,7 @@ def build_hist_rows(corr):
             rows.append((p2.DATASETS[key].label, vz.COLORS[key],
                          _period(corr[key], *RECENT), _period(corr[key], *EARLY)))
     pairs = [("ICON-EPOC-hist", "ICON-EPOC-ctrl", "km-scale ICON (EPOC)",
-              "transient GHG", "control"),
+              "hist+ssp585", "control"),
              ("EERIE", "EERIE-ctrl", "EERIE ICON-ESM-ER",
               "hist+ssp245", "control")]
     for fk, ck, label, fl, cl in pairs:

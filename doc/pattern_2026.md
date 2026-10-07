@@ -73,7 +73,7 @@ threshold.
 |---|---|---|---|---|
 | MPI-ESM1-2-LR grand ensemble | ~1° | 12,550 | JJA 2016, member r24 | **+0.67** |
 | MPI-ESM1.2-ER | ~10 km | 450 | JJA 2038, member r2 | +0.60 |
-| km-scale ICON (EPOC, transient GHG) | 5 km | 36 | JJA 2002 | +0.59 |
+| km-scale ICON (EPOC, hist+ssp585) | 5 km | 36 | JJA 2002 | +0.59 |
 | km-scale ICON (EPOC, control) | 5 km | 35 | JJA 2005 | +0.53 |
 | EERIE ICON-ESM-ER (hist+ssp245) | 5 km, archived 0.25° | 187 (3 members) | JJA 2039, member r1 | +0.50 |
 | EERIE ICON-ESM-ER (control) | 5 km, archived 0.25° | 101 | JJA 2041 | +0.61 |

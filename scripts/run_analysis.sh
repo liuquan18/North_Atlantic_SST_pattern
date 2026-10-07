@@ -25,6 +25,8 @@ python3 "${SCRIPTS}/plotting/fig7_event_composite.py"
 python3 "${SCRIPTS}/plotting/fig7_event_composite_select.py"
 python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr.py"
 python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr_control.py"
+python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso.py"
+python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso_control.py"
 
 echo
 echo "figures in ${PROJECT_ROOT}/figures/pattern_2026:"

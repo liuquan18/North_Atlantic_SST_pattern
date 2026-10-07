@@ -75,8 +75,12 @@ DATASETS = {
                 "mpige_jja_anom_na025.nc", "mpige_jja_gmsst.nc",
                 "model", "~1 deg ocean", (1850, 2100),
                 "50 members, historical + ssp245"),
-        # epoc2_020: irad_co2=3 with greenhouse_ssp585.nc and bc_ozone_ssp585_<year>,
-        # i.e. transient greenhouse-gas forcing -- but Kinne aerosols pinned at 1850.
+        # epoc2_020 (scripts/epoc2_020.run): a historical + SSP5-8.5 run started in
+        # 1990 from IFS -- transient GHGs (greenhouse_ssp585.nc), anthropogenic
+        # aerosol (irad_aero=18: MACv2-SP plumes, historical+SSP5-8.5, on top of
+        # the 1850 Kinne *natural background*, which is how MACv2-SP is set up),
+        # CMIP6 volcanic and solar forcing. Yearly ozone files are linked, but
+        # irad_o3=5 is commented "constant annual cycle climatology" -- unverified.
         # MPI-ESM1.2-ER: same model family as MPI-GE above, but with the
         # eddy-resolving TP6M ocean instead of the ~1 deg one -- so the pair
         # isolates ocean resolution within a single model.
@@ -84,10 +88,10 @@ DATASETS = {
                 "mpier_jja_anom_na025.nc", "mpier_jja_gmsst.nc",
                 "model", "~100 km atm / 10 km ocean", (1950, 2099),
                 "3 realizations, historical + ssp585"),
-        Dataset("ICON-EPOC-hist", "km-scale ICON (EPOC, transient GHG)",
+        Dataset("ICON-EPOC-hist", "km-scale ICON (EPOC, hist+ssp585)",
                 "epoc2_020_jja_anom_na025.nc", "epoc2_020_jja_gmsst.nc",
                 "model", "10 km atm / 5 km ocean", (1990, 2025),
-                "historical + SSP5-8.5 greenhouse gases, aerosols held at 1850"),
+                "historical + SSP5-8.5 forcing (from 2015), started 1990"),
         # epoc2_010: irad_co2=2 with aerosols and ozone pinned at 1990 -- a
         # constant-forcing control, not a historical run.
         Dataset("ICON-EPOC-ctrl", "km-scale ICON (EPOC, control)",

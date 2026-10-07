@@ -6,7 +6,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --account=mh0033
 #
-# km-scale ICON (EPOC, epoc2_020 = transient GHG) daily maximum 2 m temperature,
+# km-scale ICON (EPOC, epoc2_020 = hist+ssp585) daily maximum 2 m temperature,
 # April-October 1990-2025, Europe 0.25 deg.
 #
 # Source: `tas` in the epoc2_020_atm_2d_1d_max stream (daily maximum of the
