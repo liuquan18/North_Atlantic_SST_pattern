@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_zoom
 #SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/zoom.%j.out
-#SBATCH --partition=shared
+#SBATCH --partition=compute
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G

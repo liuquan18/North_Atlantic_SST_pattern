@@ -38,6 +38,7 @@ from matplotlib.gridspec import GridSpec
 
 sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 from fig1_patterns_simulations import heatwave_season, land_mean, season
@@ -124,7 +125,8 @@ def main():
                              color=vz.INK, linespacing=1.3)
 
             if fmt is not None:
-                vz.panel_tag(ax, "land mean " + fmt.format(land_mean(field)), loc="upper right")
+                vz.panel_tag(ax, "box mean " + fmt.format(land_mean(field)), loc="upper right")
+                vz.draw_box(ax, hw.MEAN_BOX)
             if j == 0:
                 ax.text(-0.24, 0.5, label, transform=ax.transAxes, rotation=90,
                         va="center", ha="center", fontsize=9.2, color=vz.INK)
@@ -147,7 +149,7 @@ def main():
              "heatwave: ≥3 consecutive days with Tmax anomaly above the calendar-day 90th "
              "percentile (15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
              "1991–2020 reference of the same dataset  ·  grey land: no heatwave  ·  "
-             "MPI-ESM1.2-ER omitted (no daily output)",
+             f"MPI-ESM1.2-ER omitted (no daily output)  ·  tags: land mean in the dashed box, {hw.MEAN_BOX_LABEL}",
              ha="center", fontsize=8, color=vz.INK_SOFT)
 
     out = p2.FIG_DIR / "fig1_heatwaves_2026.png"

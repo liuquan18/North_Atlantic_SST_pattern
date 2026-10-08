@@ -1,7 +1,8 @@
 # JJA 2026 North Atlantic + Mediterranean SST pattern
 
 Pattern-correlation study of the **observed JJA 2026** sea surface temperature
-pattern over **30–60°N, 80°W–40°E** against four simulation sources, including
+pattern over **20–60°N, 80°W–40°E** (30–60°N until 2026-10-07; extended to take
+in the subtropical warming; Red Sea masked) against four simulation sources, including
 two km-scale ICON configurations that are new to this repository.
 
 It succeeds an earlier JJA 2023 analysis (MPI-GE only), whose scripts were
@@ -12,7 +13,7 @@ removed from this branch; they remain in the git history on `main`.
 | | 2023 pipeline | this pipeline |
 |---|---|---|
 | reference season | JJA 2023 | JJA 2026 |
-| region | 0–70°N, 80°W–0° | 30–60°N, 80°W–40°E (adds the Mediterranean) |
+| region | 0–70°N, 80°W–0° | 20–60°N, 80°W–40°E (adds the Mediterranean), also scored separately over the Atlantic (west of 0°) and Mediterranean (east of 0°, 30–48°N) halves |
 | variable | `Amon/ts` then `Omon/tos` | `tos` / `to` only — never `ts`/`tas` |
 | simulations | MPI-GE | MPI-GE, km-scale ICON (EPOC ×2), EERIE ICON-ESM-ER (×2, forced run 3 members) |
 | scoring grid | ERA5's grid | common 1° grid, common ocean mask across all datasets |
@@ -52,7 +53,9 @@ small anomaly field, never on raw monthly data.
 
 ## What the analysis found
 
-Numbers below are from `data/pattern_2026/results/` (run of 2026-09-22); figures
+Numbers below are from `data/pattern_2026/results/` (run of 2026-09-22, **on the
+earlier 30–60°N box** — not yet revised for 20–60°N; heatwave numbers there are
+land means over 35–70°N, 12°W–42°E, since replaced by 35–60°N, 10°W–30°E); figures
 in `figures/pattern_2026/`.
 
 **The observed reference.** JJA 2026 over the box is +0.69 °C, the 3rd warmest
@@ -256,6 +259,23 @@ reason. A 1° cell enters the correlation only if it is ≥50% valid ocean.
 and the ICON ocean grids, especially around the Mediterranean coast. The mask
 used is the **intersection** over all datasets, so every correlation is taken
 over exactly the same set of cells.
+
+**Atlantic vs Mediterranean.** To see which basin carries the resemblance to
+2026, the correlation is also scored over each half alone
+(`src.pattern_2026.SPLIT_REGIONS`, `results/corr_<variant>_{atl,med}.nc`,
+`best_analogues_{atl,med}.csv`): *Atlantic* = common-mask cells west of 0°
+(20–60°N; includes the Alboran Sea), *Mediterranean* = cells east of 0° between
+30 and 48°N (includes the Black Sea). The North Sea and Baltic, also east of 0°,
+are in neither half. Both fields are restricted to the half before correlating,
+so the centred variant judges each half on its own shape. The figure scripts
+`fig1_patterns_era5.py`, `fig1_patterns_simulations.py`,
+`fig1_heatwave_analogues.py` and `fig8_hwd_vs_corr.py` take `atl` or `med` as an
+argument and write the same figure with a `_atl` / `_med` suffix.
+
+**Heatwave area mean.** Every area mean of heatwave quantities (scatter y
+axes, the tags on the heatwave maps) is over the land of southern Europe,
+35–60°N, 10°W–30°E (`src.heatwave.MEAN_BOX`, dashed on the maps), where the
+2003 and 2026 heatwaves were strongest. Until 2026-10-07 it was all land in 35–70°N, 12°W–42°E.
 
 **Best analogue.** Models are free-running, so their calendar year carries no
 forecast meaning — "JJA 2026" in ssp245 is an arbitrary draw. Each model is

@@ -3,10 +3,13 @@ Figure 3 (historical variant) -- the same split violins as figure 3, but with
 the single-model ensembles compared over the observed era instead of over the
 end of the century, and ERA5 itself as the first row.
 
-  ERA5, MPI-GE,    upper: 1990-2025, lower: pre-1980, i.e. as much of
+  ERA5, MPI-GE,    upper: 1990-2026, lower: pre-1980, i.e. as much of
   MPI-ER           1850-1979 as the record covers (ERA5 1940-1979,
                    MPI-ER 1950-1979)
-  EPOC, EERIE      upper: forced run over 1990-2025, lower: whole control run
+  EPOC, EERIE      upper: forced run over 1990-2026, lower: whole control run
+
+ERA5's own 2026 is left out: it is the reference itself (r = 1), not a
+sample of the distribution.
 """
 import sys
 
@@ -20,7 +23,7 @@ sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 HALF_WIDTH = 0.40   # max extent of each half-violin, in row units
-RECENT = (1990, 2025)
+RECENT = (1990, p2.REF_YEAR)
 EARLY = (1850, 1979)
 
 
@@ -40,7 +43,8 @@ def _vals(da):
 
 def _period(da, y0, y1):
     """Values and an "a-b" label over the years of [y0, y1] the record covers."""
-    yrs = [y for y in _years(da) if y0 <= y <= y1 and y != p2.REF_YEAR]
+    self_ref = da.name == "ERA5"      # ERA5 2026 vs itself is 1 by construction
+    yrs = [y for y in _years(da) if y0 <= y <= y1 and not (self_ref and y == p2.REF_YEAR)]
     return _vals(da.sel(year=yrs)), f"{yrs[0]}–{yrs[-1]}"
 
 
@@ -75,7 +79,7 @@ def build_hist_rows(corr):
     for fk, ck, label, fl, cl in pairs:
         if fk in corr and ck in corr:
             f, c = corr[fk], corr[ck]
-            # forced runs over the same 1990-2025 window as the rows above
+            # forced runs over the same RECENT window as the rows above
             # (EPOC covers exactly that; EERIE runs 1950-2050)
             fv, flab = _period(f, *RECENT)
             rows.append((label, vz.COLORS[fk],

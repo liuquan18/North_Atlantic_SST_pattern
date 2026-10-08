@@ -88,7 +88,7 @@ def main():
     ax.plot(gm.year, gm, color=vz.COLORS["MPI-GE"], lw=1.5, zorder=2,
             label="global ocean mean")
     ax.plot(box.year, box, color=vz.INK, lw=1.5, zorder=3,
-            label="North Atlantic + Mediterranean box mean (30–60°N, 80°W–40°E)")
+            label=f"North Atlantic + Mediterranean box mean ({p2.REGION_LABEL})")
 
     v = float(box.sel(year=p2.REF_YEAR))
     summary = json.loads((p2.RESULT_DIR / "summary.json").read_text())

@@ -29,7 +29,7 @@ mkdir -p "$WORK" "${PROJECT_ROOT}/logs"
 CMIP=/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical
 SCEN=/pool/data/CMIP6/data/ScenarioMIP/MPI-M/MPI-ESM1-2-LR/ssp245
 
-WGT=${WORK}/wgt_mpige_to_na025.nc
+WGT=${WORK}/wgt_mpige_to_na025_${NA025_ID}.nc
 if [ ! -s "$WGT" ]; then
     echo "=== generating remap weights once (shared tripolar grid) ==="
     sample=$(ls ${CMIP}/r1i1p1f1/Omon/tos/gn/v*/tos_*_185001-186912.nc | head -1)
@@ -40,12 +40,12 @@ process_member() {
     ens=$1
     source "$2/config.sh"
     WORK=${WORK_BASE}/mpige
-    WGT=${WORK}/wgt_mpige_to_na025.nc
+    WGT=${WORK}/wgt_mpige_to_na025_${NA025_ID}.nc
     CMIP=/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical
     SCEN=/pool/data/CMIP6/data/ScenarioMIP/MPI-M/MPI-ESM1-2-LR/ssp245
 
     mem=r${ens}i1p1f1
-    reg_out=${WORK}/anom_na025_${mem}.nc
+    reg_out=${WORK}/anom_na025_${NA025_ID}_${mem}.nc
     gm_out=${WORK}/gmsst_${mem}.nc
     [ -s "$reg_out" ] && [ -s "$gm_out" ] && { echo "  ${mem} already done"; return 0; }
 

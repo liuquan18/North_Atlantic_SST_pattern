@@ -7,12 +7,11 @@ season's ENSO state:
       20S-20N mean SST anomaly, 1991-2020 reference of the same dataset
       (08_nino34.sh). Subtracting the tropical mean removes the forced
       warming, which heatwave days share, so the fit is not a trend artefact.
-  y   land-mean JJA heatwave days over the whole European map, as in fig 8
+  y   land-mean JJA heatwave days over southern Europe, as in fig 8
 
-Same datasets, PERIOD = 1990-2025 window, intensity colouring, least-squares
+Same datasets, PERIOD = 1990-2026 window, intensity colouring, least-squares
 fit and statistics as fig 8; the slope is in heatwave days per +1 K. In ERA5,
-JJA 2026, 2015 and 2003 are ringed, 2026 drawn outside PERIOD and left out of
-the fit, as in fig 8.
+JJA 2026, 2015 and 2003 are ringed; all three are in the fit, as in fig 8.
 """
 import sys
 from pathlib import Path
@@ -26,6 +25,7 @@ from scipy import stats
 
 sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 from fig8_hwd_vs_corr import (ERA5_MARKED, KEYS, MARK_OFFSET, PERIOD,
@@ -85,8 +85,7 @@ def main():
         t = tables[key].sort_values("year")
         sc = scatter_intensity(ax, t, inorm, s=7 if len(t) > 1000 else 24)
         if key == "ERA5":
-            full = season_table(key, enso, (PERIOD[0], p2.REF_YEAR)).set_index("year")
-            scatter_intensity(ax, full.loc[[p2.REF_YEAR]].reset_index(), inorm, s=24)
+            full = t.set_index("year")
             for y in ERA5_MARKED:
                 row = full.loc[y]
                 ax.scatter(row.r, row.hwd, s=90, facecolor="none", edgecolor=vz.INK,
@@ -104,7 +103,7 @@ def main():
         ax.tick_params(labelsize=7.5)
 
     colorbar(fig, sc, [0.915, 0.115, 0.012, 0.585])
-    axes[0].set_ylabel("European land-mean JJA heatwave days", fontsize=8.5)
+    axes[0].set_ylabel("S. European land-mean JJA heatwave days", fontsize=8.5)
     axes[0].set_xlim(-1.05 * xabs, 1.05 * xabs)
     axes[0].set_ylim(-0.5, ymax * 1.2)   # headroom: the stats text sits above the data
 
@@ -114,9 +113,9 @@ def main():
              "one point per JJA season (and member), coloured by mean heatwave intensity "
              "(mean Tmax anomaly over the season's European land heatwave days)\n"
              "x: relative Niño-3.4 of the same JJA = Niño-3.4 (5°S–5°N, 170°W–120°W) minus "
-             "20°S–20°N mean SST anomaly  ·  y: land-mean heatwave days, 35–70°N, 12°W–42°E "
+             f"20°S–20°N mean SST anomaly  ·  y: land-mean heatwave days, {hw.MEAN_BOX_LABEL} "
              "(Xu et al. 2026)\nboth against 1991–2020 of the same dataset  ·  "
-             f"ringed: ERA5 {p2.REF_YEAR} (outside the window, not in the fit), 2015, 2003  ·  "
+             f"ringed: ERA5 {p2.REF_YEAR}, 2015, 2003 (all in the fit)  ·  "
              "line: least-squares fit, Pearson r, two-sided p, slope per +1 K",
              ha="center", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.4)
 

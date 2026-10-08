@@ -140,7 +140,7 @@ def main():
     fig.suptitle("How close does each simulated summer come to the observed JJA 2026 SST pattern?",
                  fontsize=12, color=vz.INK, y=1 - 0.28 / fig_h)
     fig.text(0.5, 1 - 0.62 / fig_h,
-             "area-weighted pattern correlation against ERA5 JJA 2026 over 30–60°N, 80°W–40°E  ·  "
+             f"area-weighted pattern correlation against ERA5 JJA 2026 over {p2.REGION_LABEL}  ·  "
              f"{p2.VARIANTS[variants[0]]['long']}  ·  "
              "1° common ocean grid  ·  dotted line marks 2026 in the observations",
              ha="center", fontsize=8.2, color=vz.INK_SOFT)

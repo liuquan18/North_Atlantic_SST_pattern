@@ -13,6 +13,10 @@ are drawn at the resolution the model actually has.
   bottom row  the SST pattern of the same season (box mean removed), with its
               pattern correlation against ERA5 JJA 2026
 
+With an argument `atl` or `med` (src.pattern_2026.SPLIT_REGIONS) the seasons
+are the best analogues scored over that half of the box alone, the half is
+outlined on the SST maps, and the file name gets a _atl / _med suffix.
+
 So each column asks: in the season whose SST pattern looks most like 2026,
 what did European summer heat look like? MPI-ESM1.2-ER has no daily
 atmosphere output, so its heatwave panel is left empty.
@@ -73,22 +77,23 @@ def heatwave_season(key, year, member):
         return ds.load()
 
 
-def land_mean_series(field, extent=None):
+def land_mean_series(field, box=None):
     """
-    Area-weighted mean over the land cells inside the drawn map extent, per
-    season ([member,] year). Seasons with no data (a member not run that
-    year) come out NaN, not 0.
+    Area-weighted mean over the land cells inside `box` (default: the southern
+    European averaging box, src.heatwave.MEAN_BOX), per season ([member,]
+    year). Seasons with no data (a member not run that year) come out NaN, not 0.
     """
-    lon0, lon1, lat0, lat1 = extent or vz.EUROPE_EXTENT
+    box = box or hw.MEAN_BOX
+    (lon0, lon1), (lat0, lat1) = box["lon"], box["lat"]
     inside = ((field.lat >= lat0) & (field.lat <= lat1) & (field.lon >= lon0) & (field.lon <= lon1))
     w = np.cos(np.deg2rad(field.lat)) * (field.notnull() & inside)
     wsum = w.sum(("lat", "lon"))
     return (field.fillna(0) * w).sum(("lat", "lon")) / wsum.where(wsum > 0)
 
 
-def land_mean(field, extent=None):
-    """Area-weighted mean over the land cells inside the drawn map extent."""
-    return float(land_mean_series(field, extent))
+def land_mean(field, box=None):
+    """Area-weighted mean over the land cells inside `box` (default hw.MEAN_BOX)."""
+    return float(land_mean_series(field, box))
 
 
 def column(key, year, member, r, title):
@@ -100,15 +105,21 @@ def column(key, year, member, r, title):
                 hwd=None if hws is None else hws.hwd)
 
 
-def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwave days",
-                lat_line=None):
+HW_NOTE = f"top-row value: land-mean heatwave days in the dashed box, {hw.MEAN_BOX_LABEL}"
+
+
+def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
+                sst_region_label=None, sst_box=None):
     """
     Heatwave days (top) over SST pattern (bottom), one column per season.
 
     A column may carry its own "hw_tag" for the heatwave panel (default: the
     land-mean heatwave days) and "r_tag" for the SST panel (default: r); `lat_line` draws a dashed parallel on the
-    heatwave maps, e.g. to mark a sub-region the tag refers to.
+    heatwave maps, e.g. to mark a sub-region the tag refers to. `sst_box` outlines
+    the part of the SST map that r was scored over, and `sst_region_label`
+    names it in the caption (default: the whole analysis box).
     """
+    sst_region_label = sst_region_label or p2.REGION_LABEL
     vz.use_style()
     p2.FIG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -158,6 +169,7 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
         else:
             vz.panel_tag(ax, c.get("hw_tag") or f"{land_mean(c['hwd']):.1f} days",
                          loc="upper right")
+            vz.draw_box(ax, hw.MEAN_BOX)
         if lat_line is not None:
             ax.plot([-180, 180], [lat_line, lat_line], transform=ccrs.PlateCarree(),
                     color=vz.INK, lw=0.9, ls=(0, (4, 3)), zorder=5)
@@ -166,6 +178,8 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
         ax = fig.add_subplot(gs[1, j], projection=vz.map_projection())
         im_sst = vz.draw_map(ax, c["sst"], sst_levels, sst_cmap,
                              labels_bottom=True, labels_left=(j == 0))
+        if sst_box is not None:
+            vz.draw_box(ax, sst_box, lw=1.1)
         if c["r"] is not None:
             vz.panel_tag(ax, c.get("r_tag") or f"r = {c['r']:+.2f}", loc="upper right")
 
@@ -186,7 +200,7 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
              "heatwave: ≥3 consecutive days with Tmax anomaly above the calendar-day 90th percentile "
              "(15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
              f"{hw_note}\n"
-             f"SST: {p2.VARIANTS[VARIANT]['long']}, 30–60°N, 80°W–40°E, r = pattern correlation with ERA5 JJA 2026  ·  "
+             f"SST: {p2.VARIANTS[VARIANT]['long']}, {p2.REGION_LABEL}; r = pattern correlation with ERA5 JJA 2026 over {sst_region_label}  ·  "
              "both against 1991–2020 of the same dataset",
              ha="center", va="top", fontsize=8.3, color=vz.INK_SOFT, linespacing=1.4)
 
@@ -195,8 +209,18 @@ def plot_figure(cols, suptitle, out, *, hw_note="top-row value: land-mean heatwa
     print(f"wrote {out}  (SST scale ±{vmax} °C)")
 
 
-def main():
-    best = pd.read_csv(p2.RESULT_DIR / "best_analogues.csv")
+def sst_box(half):
+    """The SPLIT_REGIONS box to outline on the SST maps, or None for the whole box."""
+    return None if half is None else {k: p2.SPLIT_REGIONS[half][k] for k in ("lon", "lat")}
+
+
+def scored_over(half):
+    """Suptitle suffix naming the half r was scored over."""
+    return "" if half is None else f" (scored over the {p2.SPLIT_REGIONS[half]['label']} only)"
+
+
+def main(half=None):
+    best = pd.read_csv(p2.best_file(half))
     cols = []
     for key, which in COLUMNS:
         year, mem, r = season(key, which, best)
@@ -204,9 +228,10 @@ def main():
         when = f"JJA {year}" + (f"  ·  member r{mem}" if mem else "")
         cols.append(column(key, year, mem, r, f"{d.label}\n{d.resolution}\n{when}"))
     plot_figure(cols, "European summer heatwaves and the North Atlantic + Mediterranean SST pattern: "
-                      f"the season of each model closest to ERA5 JJA {p2.REF_YEAR}",
-                p2.FIG_DIR / "fig1_patterns_2026_simulations.png")
+                      f"the season of each model closest to ERA5 JJA {p2.REF_YEAR}{scored_over(half)}",
+                p2.FIG_DIR / f"fig1_patterns_2026_simulations{p2.half_suffix(half)}.png",
+                sst_region_label=p2.half_label(half), sst_box=sst_box(half))
 
 
 if __name__ == "__main__":
-    main()
+    main(p2.half_from_argv(sys.argv))

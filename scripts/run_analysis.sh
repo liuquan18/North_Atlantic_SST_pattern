@@ -8,8 +8,8 @@ source "${SCRIPTS}/config.sh"
 activate_python
 cd "$PROJECT_ROOT"
 
-python3 "${SCRIPTS}/analysis/01_pattern_corr.py"
-python3 "${SCRIPTS}/analysis/02_region_means.py"
+python3 "${SCRIPTS}/sst_pattern_correlation/01_pattern_corr.py"
+python3 "${SCRIPTS}/sst_pattern_correlation/02_region_means.py"
 
 python3 "${SCRIPTS}/plotting/fig1_patterns_era5.py"
 python3 "${SCRIPTS}/plotting/fig1_patterns_simulations.py"
@@ -25,8 +25,18 @@ python3 "${SCRIPTS}/plotting/fig7_event_composite.py"
 python3 "${SCRIPTS}/plotting/fig7_event_composite_select.py"
 python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr.py"
 python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr_control.py"
+
+# the same maps and scatter, with the pattern correlation scored over the
+# Atlantic (west of 0E) and Mediterranean (east of 0E) halves separately
+for half in atl med; do
+    python3 "${SCRIPTS}/plotting/fig1_patterns_era5.py" $half
+    python3 "${SCRIPTS}/plotting/fig1_patterns_simulations.py" $half
+    python3 "${SCRIPTS}/plotting/fig1_heatwave_analogues.py" $half
+    python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr.py" $half
+done
 python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso.py"
 python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso_control.py"
+python3 "${SCRIPTS}/plotting/fig11_hwd_timeseries.py"
 
 echo
 echo "figures in ${PROJECT_ROOT}/figures/pattern_2026:"

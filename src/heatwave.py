@@ -54,6 +54,12 @@ JJA_DOY = (152, 243)     # 1 Jun .. 31 Aug
 #: scripts/european_heatwave/hw_config.sh.
 REGION = {"lon": (-15.0, 45.0), "lat": (30.0, 72.0)}
 
+#: Land box every heatwave area mean is taken over (scatter plots, map tags):
+#: southern Europe, where the 2003 and 2026 heatwaves were strongest. The
+#: southern edge at 35N keeps out nearly all of North Africa.
+MEAN_BOX = {"lon": (-10.0, 30.0), "lat": (35.0, 60.0)}
+MEAN_BOX_LABEL = "35–60°N, 10°W–30°E"
+
 #: dataset key (as in src/pattern_2026.py) -> file stem. MPI-ESM1.2-ER is absent:
 #: its echam6 output was only written as monthly means, so there is no daily
 #: Tmax to detect heatwaves in.

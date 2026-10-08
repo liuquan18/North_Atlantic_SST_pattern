@@ -31,7 +31,7 @@ declare -A SRC=(
     [epoc2_010]=/work/bm1313/b383127/epoc-icon-2024.10/experiments/epoc2_010/work
     [epoc2_020]=/work/bm1313/b383127/epoc-icon-2024.10_aerosols/experiments/epoc2_020/work
 )
-declare -A LAST=([epoc2_010]=2024 [epoc2_020]=2025)
+declare -A LAST=([epoc2_010]=2024 [epoc2_020]=${REF_YEAR})
 
 one_month() {
     ym=$1; work=$2; src=$3; exp=$4; grid=$5; gridfile=$6; wgt=$7

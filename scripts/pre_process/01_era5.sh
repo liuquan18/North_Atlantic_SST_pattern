@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_era5
 #SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/era5.%j.out
-#SBATCH --partition=shared
+#SBATCH --partition=compute
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=48G
@@ -76,7 +76,7 @@ echo "=== 5/6 global-ocean-mean JJA anomaly (before regional subsetting) ==="
 cdo -s -O -fldmean "${WORK}/era5_anom_jja.nc" "${OUT_BASE}/era5_jja_gmsst.nc"
 
 echo "=== 6/6 remap onto the common 0.25 deg regional grid ==="
-WGT=${WORK}/wgt_era5_to_na025.nc
+WGT=${WORK}/wgt_era5_to_na025_${NA025_ID}.nc
 if [ ! -s "$WGT" ]; then
     cdo -s gencon,"$GRID_NA025" "${WORK}/era5_anom_jja.nc" "$WGT"
 fi

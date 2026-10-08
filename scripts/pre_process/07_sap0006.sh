@@ -55,7 +55,7 @@ cdo -s -O -ymonmean -selyear,${CLIM_START}/${CLIM_END} "${WORK}/sap0006_jja_mont
 cdo -s -O -yearmean -ymonsub "${WORK}/sap0006_jja_monthly.nc" "${WORK}/sap0006_clim.nc" \
     "${WORK}/sap0006_anom_jja.nc"
 cdo -s -O -fldmean "${WORK}/sap0006_anom_jja.nc" "${OUT_BASE}/sap0006_jja_gmsst.nc"
-WGT=${WORK}/wgt_hp256_to_na025.nc
+WGT=${WORK}/wgt_hp256_to_na025_${NA025_ID}.nc
 # HEALPix has no stored cell corners, so cdo asks for --force on conservative weights
 [ -s "$WGT" ] || cdo -s --force gencon,"$GRID_NA025" "${WORK}/sap0006_anom_jja.nc" "$WGT"
 cdo -s -O -remap,"$GRID_NA025","$WGT" "${WORK}/sap0006_anom_jja.nc" "${OUT_BASE}/sap0006_jja_anom_na025.nc"

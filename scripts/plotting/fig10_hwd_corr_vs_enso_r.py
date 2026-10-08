@@ -9,15 +9,16 @@ the 2026-like North Atlantic SST pattern or ENSO? One point per dataset:
 
 All datasets with daily temperature -- ERA5, the transient runs (MPI-GE,
 EPOC, EERIE) and the constant-forcing controls (EPOC, EERIE, sap0006) --
-over the same PERIOD = 1990-2025 as fig 8 (for the controls these are model
+over the same PERIOD = 1990-2026 as fig 8 (for the controls these are model
 years, which carry no forcing meaning; EERIE control and sap0006 simply
-contribute those 36 of their seasons). MPI-ER has no daily Tmax.
+contribute those 37 of their seasons; records that end earlier contribute
+what they have). MPI-ER has no daily Tmax.
 
 Transient runs are filled, controls hollow in the same hue. MPI-GE (diamond)
-is the pooled r over all 50 members x 36 seasons; its 50 single-member r
+is the pooled r over all 50 members x 37 seasons; its 50 single-member r
 pairs are the small dots -- the spread a single 36-season run can show from
 internal variability alone. The dashed lines mark |r| at p = 0.05 for
-n = 36 (two-sided), the sample of a single run. EPOC control heatwaves come
+n = 37 (two-sided), the sample of a single run. EPOC control heatwaves come
 from daily MEAN temperature (its Tmax is on tape only).
 """
 import sys
@@ -30,6 +31,7 @@ from scipy import stats
 
 sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 from fig1_patterns_simulations import VARIANT
@@ -116,10 +118,10 @@ def main():
     fig.text(0.54, 0.925,
              "each point: Pearson r over the seasons (and members) of one dataset  ·  "
              "x from figure 8, y from figure 9\n"
-             "heatwave days: land mean, 35–70°N, 12°W–42°E (Xu et al. 2026)  ·  ENSO: "
+             f"heatwave days: land mean, {hw.MEAN_BOX_LABEL} (Xu et al. 2026)  ·  ENSO: "
              "Niño-3.4 minus 20°S–20°N SST anomaly\n"
              "filled: transient forcing  ·  hollow: constant-forcing control "
-             "(model years 1990–2025)  ·  EPOC control from daily mean T",
+             f"(model years {PERIOD[0]}–{PERIOD[1]})  ·  EPOC control from daily mean T",
              ha="center", va="top", fontsize=7.4, color=vz.INK_SOFT, linespacing=1.45)
 
     out = p2.FIG_DIR / "fig10_hwd_r_pattern_vs_enso.png"

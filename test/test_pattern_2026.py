@@ -11,8 +11,8 @@ import src.pattern_2026 as p2
 
 @pytest.fixture
 def grid():
-    """The common 0.25 deg analysis grid: 30-60N, 80W-40E."""
-    lat = np.arange(30.125, 60, 0.25)
+    """The common 0.25 deg analysis grid: 20-60N, 80W-40E."""
+    lat = np.arange(p2.REGION["lat"][0] + 0.125, p2.REGION["lat"][1], 0.25)
     lon = np.arange(-79.875, 40, 0.25)
     return lat, lon
 
@@ -26,7 +26,7 @@ def ones(grid):
 
 def test_coarsen_preserves_constant(ones):
     c = p2.coarsen_to_1deg(ones)
-    assert c.shape == (30, 120)
+    assert c.shape == (40, 120)
     assert np.allclose(c.values, 1.0)
 
 
@@ -161,3 +161,18 @@ def test_running_mean_is_centred_and_nan_at_the_edges():
 def test_decluster_keeps_the_higher_of_close_events():
     x = np.array([0.0, 0.5, 0.0, 0.6, 0.0, 0.0, 0.0, 0.45])
     assert list(p2.decluster(np.array([1, 3, 7]), x, 3)) == [3, 7]
+
+
+def test_split_halves_are_disjoint_and_split_at_0E(ones):
+    c = p2.coarsen_to_1deg(ones)
+    atl, med = p2.split_mask(c, "atl"), p2.split_mask(c, "med")
+    assert not bool((atl & med).any())
+    assert float(c.lon.where(atl).max()) < 0 < float(c.lon.where(med).min())
+    # North Sea / Baltic (east of 0, north of 48N) belong to neither half
+    assert not bool((atl | med).sel(lat=55.5, lon=5.5))
+
+
+def test_red_sea_is_excluded_but_the_mediterranean_is_not(ones):
+    ex = p2.excluded_mask(ones)
+    assert bool(ex.sel(lat=22.125, lon=38.125))
+    assert not bool(ex.sel(lat=34.125, lon=25.125))

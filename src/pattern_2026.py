@@ -1,7 +1,7 @@
 """
 Shared machinery for the JJA 2026 North Atlantic + Mediterranean SST pattern study.
 
-Reference pattern: observed (ERA5) JJA 2026 SST anomaly over 30-60N, 80W-40E,
+Reference pattern: observed (ERA5) JJA 2026 SST anomaly over 20-60N, 80W-40E,
 relative to a 1991-2020 JJA climatology. Every model dataset is scored against
 it with the same two metrics used in the earlier 2023 work:
 
@@ -37,7 +37,26 @@ FIG_DIR = PROJECT_ROOT / "figures" / "pattern_2026"
 
 REF_YEAR = 2026
 CLIM_PERIOD = (1991, 2020)
-REGION = {"lon": (-80.0, 40.0), "lat": (30.0, 60.0)}
+#: 20N rather than the earlier 30N, to take in the subtropical part of the
+#: warming. Must match LAT_S/LAT_N in scripts/config.sh.
+REGION = {"lon": (-80.0, 40.0), "lat": (20.0, 60.0)}
+REGION_LABEL = "20–60°N, 80°W–40°E"
+
+#: Water inside REGION that is not part of the North Atlantic + Mediterranean
+#: system, masked as soon as a field is loaded. With the box reaching 20N the
+#: Red Sea (12-30N, 32-43E) falls inside it.
+EXCLUDED = {"Red Sea": {"lat": (10.0, 30.0), "lon": (30.0, 45.0)}}
+
+#: The two halves for the separate pattern correlations, split at 0 deg
+#: longitude. "med" is limited to 30-48N so that the North Sea and the Baltic,
+#: also east of 0, do not count as Mediterranean; they enter neither half
+#: (they stay in the full box). The Alboran Sea west of 0 falls in "atl".
+SPLIT_REGIONS = {
+    "atl": dict(label="Atlantic", detail="west of 0°, 20–60°N",
+                lon=(-80.0, 0.0), lat=(20.0, 60.0)),
+    "med": dict(label="Mediterranean", detail="east of 0°, 30–48°N (incl. Black Sea)",
+                lon=(0.0, 40.0), lat=(30.0, 48.0)),
+}
 
 #: Fraction of a 1 deg cell that must be valid ocean in *every* dataset for the
 #: cell to enter the correlation.
@@ -156,7 +175,64 @@ def load_anomaly(key: str, chunks="auto") -> xr.DataArray:
     ds = DATASETS[key]
     da = _to_year_axis(
         _single_var(xr.open_dataset(ds.anom_file, chunks=chunks)).squeeze(drop=True))
+    da = da.where(~excluded_mask(da))
     return da.rename("sst_anom").assign_attrs(dataset=ds.key, label=ds.label)
+
+
+def in_box(da: xr.DataArray, box: dict) -> xr.DataArray:
+    """True on the (lat, lon) grid points of `da` inside {"lat": (s, n), "lon": (w, e)}."""
+    return ((da["lat"] >= box["lat"][0]) & (da["lat"] <= box["lat"][1])
+            & (da["lon"] >= box["lon"][0]) & (da["lon"] <= box["lon"][1]))
+
+
+def excluded_mask(da: xr.DataArray) -> xr.DataArray:
+    """True on grid points inside any EXCLUDED box."""
+    out = xr.zeros_like(da["lat"] * da["lon"], dtype=bool)
+    for box in EXCLUDED.values():
+        out = out | in_box(da, box)
+    return out
+
+
+def half_from_argv(argv) -> str | None:
+    """The SPLIT_REGIONS key given on a figure script's command line, or None (whole box)."""
+    half = argv[1] if len(argv) > 1 else None
+    if half is not None and half not in SPLIT_REGIONS:
+        raise SystemExit(f"unknown half {half!r}; expected one of {list(SPLIT_REGIONS)}")
+    return half
+
+
+def corr_file(variant: str, half: str | None = None) -> Path:
+    """results/corr_<variant>[_<half>].nc"""
+    return RESULT_DIR / (f"corr_{variant}.nc" if half is None else f"corr_{variant}_{half}.nc")
+
+
+def best_file(half: str | None = None) -> Path:
+    """results/best_analogues[_<half>].csv"""
+    return RESULT_DIR / ("best_analogues.csv" if half is None else f"best_analogues_{half}.csv")
+
+
+def half_suffix(half: str | None) -> str:
+    """Figure file-name suffix: '' for the whole box, '_atl' / '_med' for a half."""
+    return "" if half is None else f"_{half}"
+
+
+def half_label(half: str | None) -> str:
+    """Caption text for the area r is scored over."""
+    if half is None:
+        return REGION_LABEL
+    return f"the {SPLIT_REGIONS[half]['label']} half only ({SPLIT_REGIONS[half]['detail']})"
+
+
+def split_mask(da: xr.DataArray, region: str) -> xr.DataArray:
+    """
+    True on the grid points of one SPLIT_REGIONS half. The 0 deg split is
+    exclusive on the Atlantic side so a cell centred on 0 is not counted twice.
+    """
+    r = SPLIT_REGIONS[region]
+    m = in_box(da, r)
+    if region == "atl":
+        m = m & (da["lon"] < r["lon"][1])
+    return m
 
 
 def load_gmsst(key: str) -> xr.DataArray:
@@ -307,7 +383,7 @@ REGIONS = {
     "global": dict(label="Global ocean",
                    detail="each dataset's own grid"),
     "box": dict(label="Analysis box",
-                detail="30–60°N, 80°W–40°E"),
+                detail=REGION_LABEL),
     "natl": dict(label="North Atlantic",
                  detail="box minus Mediterranean"),
     "med": dict(label="Mediterranean",

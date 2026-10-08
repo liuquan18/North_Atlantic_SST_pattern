@@ -108,7 +108,7 @@ def main():
     fig.suptitle("How close do the observed and km-scale summers come to JJA 2026?",
                  fontsize=12, color=vz.INK, y=1 - 0.28 / fig_h)
     fig.text(0.5, 1 - 0.5 / fig_h,
-             f"pattern correlation against ERA5 JJA 2026, 30–60°N, 80°W–40°E  ·  {y0}–{y1}, years both records cover\n"
+             f"pattern correlation against ERA5 JJA 2026, {p2.REGION_LABEL}  ·  {y0}–{y1}, years both records cover\n"
              f"{p2.VARIANTS[variants[0]]['long']}  ·  dotted line marks 2026",
              ha="center", va="top", linespacing=1.5, fontsize=8.2, color=vz.INK_SOFT)
 

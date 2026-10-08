@@ -18,9 +18,10 @@ module load cdo/2.5.0-gcc-11.2.0 2>/dev/null || true
 module load nco 2>/dev/null || true
 
 # --- analysis region: North Atlantic + Mediterranean ---------------------
+# 20N (was 30N until 2026-10-07): takes in the subtropical part of the warming.
 export LON_W=-80
 export LON_E=40
-export LAT_S=30
+export LAT_S=20
 export LAT_N=60
 export CLIM_START=1991
 export CLIM_END=2020
@@ -38,15 +39,20 @@ mkdir -p "$WORK_BASE" "$OUT_BASE"
 # maps are drawn. The pattern correlation itself is computed on a 1 deg
 # coarsening of this grid (done in Python) so that MPI-GE, whose ocean grid is
 # ~1 deg, is not scored on structure it cannot resolve.
-export GRID_NA025=${WORK_BASE}/grid_na025.txt
+#
+# The grid file, every remap-weight file and every cached regional remap are
+# named after NA025_ID (the latitude band), so changing LAT_S/LAT_N can never
+# silently reuse weights or intermediates built for the old box.
+export NA025_ID=${LAT_S}-${LAT_N}N
+export GRID_NA025=${WORK_BASE}/grid_na025_${NA025_ID}.txt
 if [ ! -f "$GRID_NA025" ]; then
 cat > "$GRID_NA025" <<GRIDEOF
 gridtype  = lonlat
-xsize     = 480
-ysize     = 120
-xfirst    = -79.875
+xsize     = $(( (LON_E - LON_W) * 4 ))
+ysize     = $(( (LAT_N - LAT_S) * 4 ))
+xfirst    = $(echo "$LON_W + 0.125" | bc)
 xinc      = 0.25
-yfirst    = 30.125
+yfirst    = $(echo "$LAT_S + 0.125" | bc)
 yinc      = 0.25
 GRIDEOF
 fi

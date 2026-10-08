@@ -115,17 +115,17 @@ def season_label(row):
 
 
 # --- maps -----------------------------------------------------------------
-# The analysis box (30-60N, 80W-40E) is 120 deg wide by 30 deg tall. Drawn in
-# PlateCarree that is a 4:1 letterbox, and a grid of such panels collapses to
-# unreadable strips. Mercator is the standard choice for a mid-latitude SST map
-# and brings the panel aspect down to ~2.73:1, which is what the figure
-# geometry below is sized against.
-MAP_EXTENT = [-80, 40, 30, 60]
+# The analysis box (20-60N, 80W-40E) is 120 deg wide by 40 deg tall. Drawn in
+# PlateCarree that is a 3:1 letterbox, and a grid of such panels collapses to
+# thin strips. Mercator is the standard choice for a mid-latitude SST map
+# and brings the panel aspect down to ~2.2:1, which is what the figure
+# geometry below is sized against (via panel_aspect).
+MAP_EXTENT = [-80, 40, 20, 60]
 
 
 def map_projection():
     import cartopy.crs as ccrs
-    return ccrs.Mercator(central_longitude=-20, min_latitude=25, max_latitude=65)
+    return ccrs.Mercator(central_longitude=-20, min_latitude=15, max_latitude=65)
 
 
 def panel_aspect(extent=None):
@@ -165,7 +165,8 @@ def draw_map(ax, field, levels, cmap, extent=None, *, labels_bottom=False,
 
 
 #: Europe view for land fields (heatwaves). The data grid is wider (30-72N,
-#: 15W-45E); this crops most of North Africa so the panel reads as Europe.
+#: 15W-45E); this crops most of North Africa so the panel reads as Europe,
+#: and still holds the whole heatwave averaging box (src.heatwave.MEAN_BOX).
 EUROPE_EXTENT = [-12, 42, 35, 70]
 OCEAN = "#eef0f2"
 
@@ -211,6 +212,19 @@ def draw_land_map(ax, field, cmap, norm, extent=None, *, labels_bottom=False,
     gl.left_labels = labels_left
     gl.xlabel_style = gl.ylabel_style = {"size": 7, "color": INK_SOFT}
     return im
+
+
+def draw_box(ax, box, **kw):
+    """Dashed outline of a {"lon": (w, e), "lat": (s, n)} box, e.g. the averaging region."""
+    import cartopy.crs as ccrs
+    import numpy as np
+    (w, e), (s, n) = box["lon"], box["lat"]
+    # densified edges so parallels follow the projection's curvature
+    lon = np.r_[np.linspace(w, e, 50), np.full(50, e), np.linspace(e, w, 50), np.full(50, w)]
+    lat = np.r_[np.full(50, s), np.linspace(s, n, 50), np.full(50, n), np.linspace(n, s, 50)]
+    style = dict(color=INK, lw=0.9, ls=(0, (4, 3)), zorder=5)
+    style.update(kw)
+    ax.plot(lon, lat, transform=ccrs.PlateCarree(), **style)
 
 
 def heatwave_cmap():

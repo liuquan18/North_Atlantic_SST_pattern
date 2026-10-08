@@ -9,6 +9,7 @@ import os
 import re
 import sys
 
+import dask
 import xarray as xr
 
 WORK = os.environ.get("WORK_BASE", "/scratch/m/m300883/nalt2026") + "/mpige"
@@ -50,12 +51,18 @@ def stack(pattern, fname, limit=None):
             "dtype": "float64",
         }
     out = f"{OUT}/{fname}"
-    ds.to_netcdf(out, encoding=enc)
+    # Single-threaded: on a 256-core compute node dask's default thread pool
+    # reads the 50 netCDF files concurrently and the write deadlocks in the
+    # (not thread-safe) netCDF/HDF5 library -- it hung for 35 min after the
+    # header on 2026-10-07. Plain sequential I/O takes about a minute.
+    with dask.config.set(scheduler="synchronous"):
+        ds.to_netcdf(out, encoding=enc)
     print(f"  {len(files)} members -> {out}  {dict(ds.sizes)}")
 
 
 if __name__ == "__main__":
     limit = int(sys.argv[1]) if len(sys.argv) > 1 else None
     suffix = f"_test{limit}" if limit else ""
-    stack("anom_na025_r*i1p1f1.nc", f"mpige_jja_anom_na025{suffix}.nc", limit)
+    # per-member regional files are named after the latitude band (config.sh NA025_ID)
+    stack(f"anom_na025_{os.environ['NA025_ID']}_r*i1p1f1.nc", f"mpige_jja_anom_na025{suffix}.nc", limit)
     stack("gmsst_r*i1p1f1.nc", f"mpige_jja_gmsst{suffix}.nc", limit)

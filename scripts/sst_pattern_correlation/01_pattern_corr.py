@@ -5,8 +5,11 @@ Mediterranean SST pattern.
 Inputs  : data/pattern_2026/<ds>_jja_anom_na025.nc and <ds>_jja_gmsst.nc
 Outputs : data/pattern_2026/results/
             corr_<variant>.nc        correlation time series per dataset
+            corr_<variant>_<half>.nc the same, scored over the Atlantic (atl) or
+                                     Mediterranean (med) half of the box alone
             reference_<variant>.nc   the ERA5 2026 target pattern (0.25 and 1 deg)
             best_analogues.csv       the top-scoring season of each simulation
+            best_analogues_<half>.csv  ... scored over one half alone
             ocean_mask_1deg.nc       the common domain all scores are taken over
             summary.json             headline numbers quoted in the figures
 
@@ -22,6 +25,39 @@ import xarray as xr
 
 sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 import src.pattern_2026 as p2
+
+
+def best_analogue(r, key):
+    """
+    (year, member or None, r, note) of the highest-scoring season of one dataset.
+
+    The best analogue is the single simulated season closest to the observed
+    2026 pattern (over members too, where there are any). For the
+    observations, the reference year itself is trivially r = 1 and is skipped.
+    """
+    if key == "ERA5":
+        excl = r.where(r["year"] != p2.REF_YEAR)
+        ybest = excl.isel(year=int(excl.fillna(-9).argmax("year")))
+        return int(ybest["year"]), None, float(ybest), f"excluding {p2.REF_YEAR} itself"
+    if "member" in r.dims:
+        stacked = r.stack(z=("member", "year"))
+        zbest = stacked.isel(z=int(stacked.fillna(-9).argmax("z")))
+        return int(zbest["year"]), int(zbest["member"]), float(zbest), ""
+    ybest = r.isel(year=int(r.fillna(-9).argmax("year")))
+    return int(ybest["year"]), None, float(ybest), ""
+
+
+def write_corr(corrs, variant, vinfo, fname, region_desc):
+    # each ensemble gets its own member dimension: a shared "member" would
+    # align MPI-GE's 50 and MPI-ESM1.2-ER's 3 onto one index and pad the
+    # smaller with NaN (see src.pattern_2026.member_dim)
+    ds_out = xr.Dataset({
+        k: (v.rename({"member": f"member_{k}"}) if "member" in v.dims else v)
+        for k, v in corrs.items()
+    })
+    ds_out.attrs.update(variant=variant, description=vinfo["long"],
+                        reference=f"ERA5 JJA {p2.REF_YEAR}", region=region_desc)
+    ds_out.to_netcdf(p2.RESULT_DIR / fname)
 
 
 def main():
@@ -51,12 +87,23 @@ def main():
     if p2.REF_YEAR not in anom["ERA5"].year.values:
         raise SystemExit(f"ERA5 has no JJA {p2.REF_YEAR}")
 
+    halves = {h: (mask & p2.split_mask(mask, h)).rename(f"mask_{h}")
+              for h in p2.SPLIT_REGIONS}
+    for h, m in halves.items():
+        print(f"  {p2.SPLIT_REGIONS[h]['label']:14s} half: {int(m.sum())} cells")
+    xr.Dataset(halves).to_netcdf(p2.RESULT_DIR / "split_masks_1deg.nc")
+
     summary = {"reference_year": p2.REF_YEAR,
                "region": p2.REGION,
+               "excluded": p2.EXCLUDED,
+               "split_regions": {h: {k: v for k, v in d.items()}
+                                 for h, d in p2.SPLIT_REGIONS.items()},
+               "n_split_cells_1deg": {h: int(m.sum()) for h, m in halves.items()},
                "climatology": list(p2.CLIM_PERIOD),
                "n_common_ocean_cells_1deg": ncell,
                "datasets": {}}
     rows = []
+    half_rows = {h: [] for h in p2.SPLIT_REGIONS}
 
     for variant, vinfo in p2.VARIANTS.items():
         print(f"\n===== variant: {variant} ({vinfo['long']}) =====")
@@ -79,25 +126,7 @@ def main():
             # re-coarsening 2.9 GB from 0.25 deg on every single access.
             r = p2.pattern_corr(pat_1deg[k], ref_1deg, centered=centered).compute()
             corrs[k] = r.rename(k)
-
-            # best analogue = the single simulated season closest to the
-            # observed 2026 pattern (over members too, where there are any)
-            if "member" in r.dims:
-                stacked = r.stack(z=("member", "year"))
-                zbest = stacked.isel(z=int(stacked.fillna(-9).argmax("z")))
-                best_year, best_member, best_r = (
-                    int(zbest["year"]), int(zbest["member"]), float(zbest))
-            else:
-                ybest = r.isel(year=int(r.fillna(-9).argmax("year")))
-                best_year, best_member, best_r = int(ybest["year"]), None, float(ybest)
-
-            # for the observations, the reference year itself is trivially r=1
-            note = ""
-            if k == "ERA5":
-                excl = r.where(r["year"] != p2.REF_YEAR)
-                ybest = excl.isel(year=int(excl.fillna(-9).argmax("year")))
-                best_year, best_r = int(ybest["year"]), float(ybest)
-                note = f"excluding {p2.REF_YEAR} itself"
+            best_year, best_member, best_r, note = best_analogue(r, k)
 
             rows.append(dict(variant=variant, dataset=k, label=p2.DATASETS[k].label,
                              best_year=best_year, best_member=best_member,
@@ -120,17 +149,30 @@ def main():
                              best_member=int(r26["member"][int(r26.argmax())]))
             summary.setdefault("nominal_2026", {}).setdefault(k, []).append(entry)
 
-        # each ensemble gets its own member dimension: a shared "member" would
-        # align MPI-GE's 50 and MPI-ESM1.2-ER's 3 onto one index and pad the
-        # smaller with NaN (see src.pattern_2026.member_dim)
-        ds_out = xr.Dataset({
-            k: (v.rename({"member": f"member_{k}"}) if "member" in v.dims else v)
-            for k, v in corrs.items()
-        })
-        ds_out.attrs.update(variant=variant, description=vinfo["long"],
-                            reference=f"ERA5 JJA {p2.REF_YEAR}",
-                            region=str(p2.REGION))
-        ds_out.to_netcdf(p2.RESULT_DIR / f"corr_{variant}.nc")
+        write_corr(corrs, variant, vinfo, f"corr_{variant}.nc", str(p2.REGION))
+
+        # ---- the same, over the Atlantic and Mediterranean halves alone ----
+        # Both fields are restricted to the half before correlating, so for the
+        # centred variant each half is judged on its own shape, its own mean
+        # removed (the box mean removed by make_pattern drops out).
+        for h, hmask in halves.items():
+            ref_h = ref_1deg.where(hmask)
+            corrs_h = {}
+            for k in available:
+                r = p2.pattern_corr(pat_1deg[k].where(hmask), ref_h,
+                                    centered=centered).compute()
+                corrs_h[k] = r.rename(k)
+                best_year, best_member, best_r, note = best_analogue(r, k)
+                half_rows[h].append(dict(variant=variant, dataset=k,
+                                         label=p2.DATASETS[k].label,
+                                         best_year=best_year, best_member=best_member,
+                                         best_r=round(best_r, 4),
+                                         n_seasons=int(r.count()), note=note))
+                mem = f", member r{best_member}" if best_member else ""
+                print(f"  [{h}] {k:16s} best analogue: JJA {best_year}{mem}  r = {best_r:+.3f}")
+            hd = p2.SPLIT_REGIONS[h]
+            write_corr(corrs_h, variant, vinfo, f"corr_{variant}_{h}.nc",
+                       f"{hd['label']}: {hd['detail']}")
 
     # ---- like-for-like best analogues --------------------------------------
     # The raw "best season" comparison is unfair: MPI-GE gets 50 members x 251
@@ -194,6 +236,8 @@ def main():
 
     df = pd.DataFrame(rows)
     df.to_csv(p2.RESULT_DIR / "best_analogues.csv", index=False)
+    for h, hr in half_rows.items():
+        pd.DataFrame(hr).to_csv(p2.RESULT_DIR / f"best_analogues_{h}.csv", index=False)
     (p2.RESULT_DIR / "summary.json").write_text(json.dumps(summary, indent=2))
     print(f"\nwrote results to {p2.RESULT_DIR}")
 

@@ -17,6 +17,7 @@ from scipy import stats
 
 sys.path.insert(0, "/work/mh0033/m300883/North_Atlantic_SST_pattern")
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 from fig8_hwd_vs_corr import scatter_intensity, season_table
@@ -55,7 +56,7 @@ def main():
         ax.tick_params(labelsize=7.5)
 
     colorbar(fig, sc, [0.895, 0.115, 0.012, 0.565])
-    axes[0].set_ylabel("European land-mean JJA heatwave days", fontsize=8.5)
+    axes[0].set_ylabel("S. European land-mean JJA heatwave days", fontsize=8.5)
     axes[0].set_xlim(-1.05 * xabs, 1.05 * xabs)
     axes[0].set_ylim(-0.5, ymax * 1.25)   # headroom: the stats text sits above the data
 
@@ -64,7 +65,7 @@ def main():
     fig.text(0.48, 0.92,
              "one point per JJA season, coloured by mean heatwave intensity  ·  x: relative "
              "Niño-3.4 of the same JJA = Niño-3.4 (5°S–5°N, 170°W–120°W) minus 20°S–20°N mean "
-             "SST anomaly\ny: land-mean heatwave days, 35–70°N, 12°W–42°E (Xu et al. 2026), "
+             f"SST anomaly\ny: land-mean heatwave days, {hw.MEAN_BOX_LABEL} (Xu et al. 2026), "
              "against model years 1991–2020 of the same run  ·  line: least-squares fit, "
              "Pearson r, slope per +1 K\n"
              f"EPOC control: daily Tmax only on tape, heatwaves from daily mean T -- in the EPOC "

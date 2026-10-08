@@ -101,7 +101,7 @@ def main():
     cb.ax.tick_params(labelsize=7.5)
     cb.outline.set_linewidth(0)
 
-    axes[0].set_ylabel("European land-mean JJA heatwave days", fontsize=8.5)
+    axes[0].set_ylabel("S. European land-mean JJA heatwave days", fontsize=8.5)
     axes[0].set_xlim(-0.75, 0.85)
     axes[0].set_ylim(-0.5, ymax * 1.25)   # headroom: the stats text sits above the data
 
@@ -109,8 +109,8 @@ def main():
                  "Control runs", fontsize=12, color=vz.INK, y=0.985)
     fig.text(0.48, 0.92,
              "one point per JJA season, coloured by mean heatwave intensity  ·  x: pattern "
-             "correlation with ERA5 JJA 2026, box mean removed, 30–60°N, 80°W–40°E\n"
-             "y: land-mean heatwave days, 35–70°N, 12°W–42°E (Xu et al. 2026), against model "
+             f"correlation with ERA5 JJA 2026, box mean removed, {p2.REGION_LABEL}\n"
+             f"y: land-mean heatwave days, {hw.MEAN_BOX_LABEL} (Xu et al. 2026), against model "
              "years 1991–2020 of the same run  ·  line: least-squares fit, Pearson r, slope "
              "per +0.1 of pattern correlation\n"
              f"EPOC control: daily Tmax only on tape, heatwaves from daily mean T -- in the EPOC "

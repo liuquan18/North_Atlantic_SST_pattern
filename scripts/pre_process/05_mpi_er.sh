@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_mpier
 #SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/mpier.%j.out
-#SBATCH --partition=shared
+#SBATCH --partition=compute
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=12
 #SBATCH --mem=48G
@@ -36,12 +36,12 @@ source "${SCRIPTS}/config.sh"
 module load parallel 2>/dev/null || true
 
 WORK=${WORK_BASE}/mpier
-mkdir -p "$WORK/reg" "$WORK/gm" "${PROJECT_ROOT}/logs"
+mkdir -p "$WORK/reg_${NA025_ID}" "$WORK/gm" "${PROJECT_ROOT}/logs"
 
 SRC=/work/uo0122/u241089/MPIESM
 declare -A MEMBER=( [ER]=1 [ER3]=2 [ER5]=3 )
 
-WGT=${WORK}/wgt_mpier_to_na025.nc
+WGT=${WORK}/wgt_mpier_to_na025_${NA025_ID}.nc
 if [ ! -s "$WGT" ]; then
     echo "=== generating remap weights once (grid shared by all members) ==="
     sample=$(ls ${SRC}/ER-hist/outdata/mpiom/ER-hist_mpiom_data_2d_mm_19500101_19501231.nc)
@@ -51,7 +51,7 @@ fi
 process_file() {
     infile=$1; run=$2; work=$3; grid=$4; wgt=$5
     year=$(basename "$infile" | sed -E 's/.*_2d_mm_([0-9]{4})[0-9]{4}_.*/\1/')
-    reg="${work}/reg/${run}_${year}.nc"
+    reg="${work}/reg_${NA025_ID}/${run}_${year}.nc"
     gm="${work}/gm/${run}_${year}.nc"
     [ -s "$reg" ] && [ -s "$gm" ] && return 0
 
@@ -73,8 +73,10 @@ for run in ER ER3 ER5; do
 
     echo "  merging and building anomalies"
     for kind in reg gm; do
+        src_dir=${WORK}/${kind}
+        [ "$kind" = reg ] && src_dir=${WORK}/reg_${NA025_ID}
         out=${WORK}/${run}_jja_monthly_${kind}.nc
-        cdo -s -O -setreftime,1850-01-01,00:00:00,1day -mergetime ${WORK}/${kind}/${run}_*.nc "$out"
+        cdo -s -O -setreftime,1850-01-01,00:00:00,1day -mergetime ${src_dir}/${run}_*.nc "$out"
         cdo -s -O -ymonmean -selyear,${CLIM_START}/${CLIM_END} "$out" "${WORK}/${run}_clim_${kind}.nc"
         cdo -s -O -yearmean -ymonsub "$out" "${WORK}/${run}_clim_${kind}.nc" \
             "${WORK}/${run}_anom_${kind}.nc"

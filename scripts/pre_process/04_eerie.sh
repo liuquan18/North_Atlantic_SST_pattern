@@ -55,7 +55,7 @@ anomalies() {
     # global ocean mean, taken on the global field before regional subsetting
     cdo -s -O -fldmean "${WORK}/${label}_anom_jja.nc" "${out}/${label}_jja_gmsst.nc"
 
-    WGT=${WORK}/wgt_${label}_to_na025.nc
+    WGT=${WORK}/wgt_${label}_to_na025_${NA025_ID}.nc
     [ -s "$WGT" ] || cdo -s gencon,"$GRID_NA025" "${WORK}/${label}_anom_jja.nc" "$WGT"
     cdo -s -O -remap,"$GRID_NA025","$WGT" "${WORK}/${label}_anom_jja.nc" \
         "${out}/${label}_jja_anom_na025.nc"

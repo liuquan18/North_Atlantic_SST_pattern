@@ -1,7 +1,7 @@
 # North Atlantic SST Pattern Analysis
 
 Compares the observed **JJA 2026** sea surface temperature pattern over the
-North Atlantic + Mediterranean (30–60°N, 80°W–40°E) against climate
+North Atlantic + Mediterranean (20–60°N, 80°W–40°E) against climate
 simulations by spatial pattern correlation: the MPI-ESM1-2-LR grand ensemble,
 MPI-ESM1.2-ER, **km-scale ICON (EPOC, 10 km atm / 5 km ocean)** and EERIE
 ICON-ESM-ER. Sea surface temperature only (`tos` / `to`). All data are on

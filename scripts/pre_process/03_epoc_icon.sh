@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=na2026_epoc
 #SBATCH --output=/work/mh0033/m300883/North_Atlantic_SST_pattern/logs/epoc.%j.out
-#SBATCH --partition=shared
+#SBATCH --partition=compute
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
@@ -57,7 +57,7 @@ process_file() {
     rep=$(date -u -d "${stamp} -1 day" +%Y-%m)
     year=${rep%-*}; month=${rep#*-}
 
-    reg="${work}/reg/${exp}_${year}${month}.nc"
+    reg="${work}/reg_${NA025_ID}/${exp}_${year}${month}.nc"
     gm="${work}/gm/${exp}_${year}${month}.nc"
     [ -s "$reg" ] && [ -s "$gm" ] && return 0
 
@@ -73,7 +73,7 @@ export -f process_file
 for exp in epoc2_010 epoc2_020; do
     src=${EXP_DIR[$exp]}
     echo "==================== ${exp} ===================="
-    mkdir -p "${WORK}/reg" "${WORK}/gm"
+    mkdir -p "${WORK}/reg_${NA025_ID}" "${WORK}/gm"
 
     # JJA monthly means live in files stamped July / August / September
     mapfile -t files < <(ls ${src}/run_*/${exp}_oce_2d_1mth_mean_*.nc 2>/dev/null \
@@ -84,7 +84,7 @@ for exp in epoc2_010 epoc2_020; do
 
     # static land mask + remap weights, built once per experiment
     MASK=${WORK}/landmask_${exp}.nc
-    WGT=${WORK}/wgt_${exp}_to_na025.nc
+    WGT=${WORK}/wgt_${exp}_to_na025_${NA025_ID}.nc
     ref=${files[0]}
     if [ ! -s "$MASK" ]; then
         echo "  building static land mask (exact zeros -> missing)"
@@ -103,7 +103,7 @@ for exp in epoc2_010 epoc2_020; do
     # setreftime puts the merged axis on a single day-based reference, which
     # also repairs per-file axes written by an earlier "1mon" run
     cdo -s -O -setreftime,1850-01-01,00:00:00,1day \
-        -mergetime ${WORK}/reg/${exp}_*.nc "${WORK}/${exp}_jja_monthly_na025.nc"
+        -mergetime ${WORK}/reg_${NA025_ID}/${exp}_*.nc "${WORK}/${exp}_jja_monthly_na025.nc"
     cdo -s -O -setreftime,1850-01-01,00:00:00,1day \
         -mergetime ${WORK}/gm/${exp}_*.nc  "${WORK}/${exp}_jja_monthly_gm.nc"
 
