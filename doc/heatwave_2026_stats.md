@@ -173,6 +173,71 @@ threshold.
   simulations, more frequent than ERA5's 1-in-34, because the models are more
   variable. In 1850–1900, MPI-GE makes it 1-in-54 years.
 
+### 4. Return period in the MPI-GE climate of each year (fig 18)
+
+This section is a **distribution-only view, with no trend model of the
+observations**. A GEV is a stationary distribution, so it is fitted where
+stationarity holds:
+
+- For every year y, the fit runs across the 50 MPI-GE members in the
+  calendar years y−5 … y+4. That gives 500 seasons of one background climate,
+  so "1-in-N years" means 1 in N seasons of that climate.
+- Each ERA5 summer is then scored against the GEV of its own year
+  (`03_mpige_window_rp.py`).
+- MPI-GE is used as simulated (no variability correction) and matched by
+  calendar year.
+- The GEV and the plain count of the 500 seasons agree everywhere: within
+  13% in every year, and within 11% for return periods of 5 years or more.
+
+The rarest ERA5 summers in the climate of their year (95% bootstrap CI;
+k = MPI-GE seasons out of 500 at or above the observed value):
+
+| year | heatwave days | return period | k / 500 |
+|---|---|---|---|
+| **2026** | 20.1 | **22 yr (17–31)** | 25 |
+| **2003** | 10.4 | **13 yr (10–16)** | 36 |
+| 1947 | 6.9 | 12 yr (10–16) | 38 |
+| 2022 | 14.6 | 10 yr (8–12) | 55 |
+| 2025, 2024, 2015 | 14.7, 14.3, 10.4 | 7–8 yr | 69–76 |
+
+These are the only three summers rarer than 1-in-10 years. In this framing,
+**2026 and 2003 are the two most extreme summers for their time**, consistent
+with the trend-removed ranking of fig 17, and with no assumption about the
+shape of the trend in the observations.
+
+The same values scored in the MPI-GE climates of other years (fig 18c,
+dashed and dotted curves; 1950s = geometric mean of the 1950–1959 windows):
+
+| | 1950s | 2003 | 2026 |
+|---|---|---|---|
+| 2003 value (10.4 d) | 67 yr | 13 yr | 3.0 yr |
+| 2026 value (20.1 d) | ~1,100 yr | 147 yr | 22 yr |
+
+The 2026-value curve is noisy before about 1990, between about 280 and
+2,800 years from window to window: there it is the far tail of a narrow
+distribution, so read it as "several hundred to a few thousand years".
+
+Why this differs from the ERA5-only shift+scale fit, which puts 2026 at
+1-in-7 years:
+
+1. **Calendar matching.** MPI-GE's 2021–2030 climate is cooler than the
+   observed 2026 climate; ERA5's 2026 global SST level is reached in MPI-GE
+   only around 2039–2045. At that warming level 2026 is about 1-in-9 years
+   (section 3).
+2. **Variability.** MPI-GE varies about 1.4× as much as ERA5. Taken alone this
+   would *shorten* the return periods, so it works against point 1, not with
+   it.
+
+Limits of the window approach:
+
+- **Assumed stationarity.** The ensemble mean still rises inside a window, by
+  up to 3.4 days (about 0.6σ) in the windows centred on 1997 and 2019–2023,
+  versus about 1 day around 2003. That widens the recent windows slightly and
+  lengthens recent return periods.
+- **1947.** It ranks third because 1940s ERA5 sits against a low MPI-GE
+  baseline (6.9 days against a window median of 2.7). Early ERA5 is the least
+  certain part of the record.
+
 ## Bottom line
 
 1. **2003** is the most robust "extreme for its time" summer in the record:
