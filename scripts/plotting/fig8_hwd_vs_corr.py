@@ -38,6 +38,12 @@ construction, and included in the fit. Each panel carries the least-squares line
 (heatwave days per +0.1 of pattern correlation). The
 p-value treats every season as independent -- reasonable across members and
 years of JJA, but it ignores any year-to-year persistence.
+
+The ERA5 panel shows every ERA5 season with heatwave metrics (from 1940;
+ERA5_ALL), coloured like all other points. Its solid black line and first
+statistics are the fit over that whole record; the PERIOD fit that the model
+panels use is drawn light, for comparison. When detrended, the whole record
+gets its own linear fit in time.
 """
 import sys
 from pathlib import Path
@@ -77,6 +83,8 @@ SELECTION_NOTE = {"along_fit": "highest r close to the fitted line",
 FIT_BAND = 0.5
 MARK_OFFSET = {2003: (8, 2, "left"), 2015: (0, -19, "center"), p2.REF_YEAR: (-8, 4, "right")}
 PERIOD = (1990, p2.REF_YEAR)
+#: the whole ERA5 record, for the light all-years fit in the ERA5 panel
+ERA5_ALL = (1940, p2.REF_YEAR)
 #: intensity: the project's heatwave colours, minus the near-white end that
 #: would make dots vanish on the surface
 INTENSITY_CMAP = LinearSegmentedColormap.from_list(
@@ -192,9 +200,15 @@ def plot(corr, half, detrended):
     if detrended:
         tables = {k: detrend(t, k) for k, t in tables.items()}
     fits = {k: stats.linregress(t.r, t.hwd) for k, t in tables.items()}
+    era5_all = season_table("ERA5", corr, ERA5_ALL)
+    if detrended:
+        era5_all = detrend(era5_all, "ERA5")
+    fit_all = stats.linregress(era5_all.r, era5_all.hwd)
+    y_all = (int(era5_all.year.min()), int(era5_all.year.max()))
 
-    ymax = max(t.hwd.max() for t in tables.values())
-    ymin = min(t.hwd.min() for t in tables.values())
+    # limits also hold the pre-PERIOD ERA5 seasons drawn as context
+    ymax = max(max(t.hwd.max() for t in tables.values()), era5_all.hwd.max())
+    ymin = min(min(t.hwd.min() for t in tables.values()), era5_all.hwd.min())
     allint = pd.concat([t.intensity for t in tables.values()]).dropna()
     inorm = Normalize(*np.floor(np.percentile(allint, [2, 98]) * 2) / 2 + [0, 0.5])
     fig, axes = plt.subplots(1, len(KEYS), figsize=(3.3 * len(KEYS) + 1.2, 5.0),
@@ -206,6 +220,11 @@ def plot(corr, half, detrended):
         n = len(t)
         sc = scatter_intensity(ax, t, inorm, s=7 if n > 1000 else 24)
         if key == "ERA5":
+            early = era5_all[era5_all.year < PERIOD[0]]
+            scatter_intensity(ax, early, inorm, s=24)
+            xa = np.array([era5_all.r.min(), era5_all.r.max()])
+            ax.plot(xa, fit_all.intercept + fit_all.slope * xa, color=vz.INK, lw=1.6,
+                    zorder=3.1, label=f"{y_all[0]}–{y_all[1]} (n = {len(era5_all)})")
             full = t.set_index("year")
             marks = [(full.loc[y], y, f"JJA {y}") for y in ERA5_MARKED]
         else:
@@ -226,13 +245,23 @@ def plot(corr, half, detrended):
                                   boxstyle="round,pad=0.15"))
         f = fits[key]
         xs = np.array([t.r.min(), t.r.max()])
-        ax.plot(xs, f.intercept + f.slope * xs, color=vz.INK, lw=1.6, zorder=3)
+        # ERA5: the whole-record fit above is the main line; PERIOD is light
+        ax.plot(xs, f.intercept + f.slope * xs, color=vz.CONTEXT if key == "ERA5" else vz.INK,
+                lw=1.6, zorder=3, label=f"{PERIOD[0]}–{PERIOD[1]} (n = {n})")
 
         d = p2.DATASETS[key]
         ax.set_title(f"{d.label}\n{d.resolution}", fontsize=8.8, color=vz.INK, linespacing=1.3)
         p_txt = "p < 0.001" if f.pvalue < 0.001 else f"p = {f.pvalue:.3f}"
-        ax.text(0.03, 0.97, f"r = {f.rvalue:+.2f}  ({p_txt})\n"
-                            f"slope = {f.slope / 10:+.2f} days per +0.1",
+        stats_txt = f"r = {f.rvalue:+.2f}  ({p_txt})\nslope = {f.slope / 10:+.2f} days per +0.1"
+        if key == "ERA5":
+            pa = "p < 0.001" if fit_all.pvalue < 0.001 else f"p = {fit_all.pvalue:.3f}"
+            stats_txt = (f"{y_all[0]}–{y_all[1]}: r = {fit_all.rvalue:+.2f}  ({pa})"
+                         f"\nslope = {fit_all.slope / 10:+.2f} days per +0.1"
+                         f"\n{PERIOD[0]}–{PERIOD[1]}: r = {f.rvalue:+.2f}  ({p_txt})"
+                         f"\nslope = {f.slope / 10:+.2f} days per +0.1")
+            ax.legend(loc="lower right", fontsize=6.8, frameon=False, handlelength=1.6,
+                      borderaxespad=0.3)
+        ax.text(0.03, 0.97, stats_txt,
                 transform=ax.transAxes,
                 ha="left", va="top", fontsize=7.8, color=vz.INK_SOFT, linespacing=1.35,
                 zorder=6, bbox=dict(facecolor=vz.SURFACE, alpha=0.85, edgecolor="none",
@@ -254,7 +283,7 @@ def plot(corr, half, detrended):
                        + ("\nanomaly from forced part" if detrended else ""), fontsize=8.5)
     # -0.75 holds the whole-box and Atlantic correlations; the Mediterranean
     # ones reach further out, so widen to the data where needed
-    rmin = min(t.r.min() for t in tables.values())
+    rmin = min(min(t.r.min() for t in tables.values()), era5_all.r.min())
     axes[0].set_xlim(min(-0.75, rmin - 0.05), 1.08)
     # headroom: the stats text sits above the data
     if detrended:
@@ -276,6 +305,7 @@ def plot(corr, half, detrended):
                 f"EERIE member minus a linear fit over each record's seasons in {PERIOD[0]}–{PERIOD[1]}  ·  "
                 "pattern correlation as is (box mean already removed)\n"
                 if detrended else "")
+             + f"ERA5 panel: all seasons {y_all[0]}–{y_all[1]}, black line their fit, light line the {PERIOD[0]}–{PERIOD[1]} fit  ·  "
              + f"ringed: ERA5 {p2.REF_YEAR} (reference, r = 1, included in the fit), 2015, 2003; models: "
              + "the season shown in the heatwave-analogue figure 1"
              + (", selected on raw heatwave days" if detrended else "")
@@ -289,6 +319,8 @@ def plot(corr, half, detrended):
     fig.savefig(out)
     fig.savefig(out.with_suffix(".pdf"))
     print(f"wrote {out}")
+    print(f"  ERA5 {y_all[0]}-{y_all[1]}  n={len(era5_all):5d}  r = {fit_all.rvalue:+.3f}  "
+          f"p = {fit_all.pvalue:.2g}  slope = {fit_all.slope / 10:+.2f} days per +0.1")
     for k, f in fits.items():
         print(f"  {k:16s} n={len(tables[k]):5d}  r = {f.rvalue:+.3f}  p = {f.pvalue:.2g}  "
               f"slope = {f.slope / 10:+.2f} days per +0.1  intercept = {f.intercept:.2f}")

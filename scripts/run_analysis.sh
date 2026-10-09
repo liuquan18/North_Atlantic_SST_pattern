@@ -36,6 +36,7 @@ for half in atl med; do
 done
 python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso.py"
 python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso_control.py"
+python3 "${SCRIPTS}/plotting/fig17_era5_hwd_timeseries.py"
 python3 "${SCRIPTS}/plotting/fig11_hwd_timeseries.py"
 
 echo
