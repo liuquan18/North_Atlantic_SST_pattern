@@ -31,8 +31,8 @@ import numpy as np
 import xarray as xr
 
 PROJECT_ROOT = Path("/work/mh0033/m300883/North_Atlantic_SST_pattern")
-DATA_DIR = PROJECT_ROOT / "data" / "pattern_2026"
-RESULT_DIR = DATA_DIR / "results"
+DATA_DIR = PROJECT_ROOT / "data" / "sst_anomaly"
+RESULT_DIR = PROJECT_ROOT / "data" / "sst_pattern_corr"
 FIG_DIR = PROJECT_ROOT / "figures" / "pattern_2026"
 
 REF_YEAR = 2026
@@ -202,12 +202,12 @@ def half_from_argv(argv) -> str | None:
 
 
 def corr_file(variant: str, half: str | None = None) -> Path:
-    """results/corr_<variant>[_<half>].nc"""
+    """sst_pattern_corr/corr_<variant>[_<half>].nc"""
     return RESULT_DIR / (f"corr_{variant}.nc" if half is None else f"corr_{variant}_{half}.nc")
 
 
 def best_file(half: str | None = None) -> Path:
-    """results/best_analogues[_<half>].csv"""
+    """sst_pattern_corr/best_analogues[_<half>].csv"""
     return RESULT_DIR / ("best_analogues.csv" if half is None else f"best_analogues_{half}.csv")
 
 
@@ -352,7 +352,7 @@ def pattern_corr(field: xr.DataArray, ref: xr.DataArray, *, centered: bool,
 #: almost all the global signal (box +0.66 degC against a global ocean mean of
 #: +0.56), so removing the box mean and removing the global mean leave nearly
 #: the same field. The "global mean removed" numbers stay in
-#: results/corr_global.nc and best_analogues.csv.
+#: sst_pattern_corr/corr_global.nc and best_analogues.csv.
 PLOT_VARIANTS = ["spatial"]
 
 VARIANTS = {

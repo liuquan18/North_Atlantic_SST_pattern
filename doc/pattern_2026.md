@@ -41,7 +41,7 @@ already on disk, so a partial run can be resubmitted as is.
 ## The common interface
 
 Every cdo stage reduces its dataset to exactly two files in
-`data/pattern_2026/`, which is all the Python knows about:
+`data/sst_anomaly/`, which is all the Python knows about:
 
 - `<ds>_jja_anom_na025.nc` — JJA-mean SST anomaly, one step per year (plus a
   `member` dimension for MPI-GE), on the common 0.25° regional grid
@@ -53,7 +53,7 @@ small anomaly field, never on raw monthly data.
 
 ## What the analysis found
 
-Numbers below are from `data/pattern_2026/results/` (run of 2026-09-22, **on the
+Numbers below are from `data/sst_pattern_corr/` (run of 2026-09-22, **on the
 earlier 30–60°N box** — not yet revised for 20–60°N; heatwave numbers there are
 land means over 35–70°N, 12°W–42°E, since replaced by 35–60°N, 10°W–30°E); figures
 in `figures/pattern_2026/`.
@@ -239,7 +239,7 @@ that explicit.
 
 **Two pattern definitions** are computed and stored, matching the 2023 work.
 They turn out to give near-identical correlations here, so the figures draw only
-the first; `results/corr_global.nc` and `best_analogues.csv` keep both, and
+the first; `sst_pattern_corr/corr_global.nc` and `best_analogues.csv` keep both, and
 `src.pattern_2026.PLOT_VARIANTS` controls what is drawn.
 
 
@@ -262,7 +262,7 @@ over exactly the same set of cells.
 
 **Atlantic vs Mediterranean.** To see which basin carries the resemblance to
 2026, the correlation is also scored over each half alone
-(`src.pattern_2026.SPLIT_REGIONS`, `results/corr_<variant>_{atl,med}.nc`,
+(`src.pattern_2026.SPLIT_REGIONS`, `sst_pattern_corr/corr_<variant>_{atl,med}.nc`,
 `best_analogues_{atl,med}.csv`): *Atlantic* = common-mask cells west of 0°
 (20–60°N; includes the Alboran Sea), *Mediterranean* = cells east of 0° between
 30 and 48°N (includes the Black Sea). The North Sea and Baltic, also east of 0°,

@@ -16,7 +16,7 @@ import xarray as xr
 
 WORK = os.environ.get("WORK_BASE", "/scratch/m/m300883/nalt2026") + "/eerie"
 OUT = os.environ.get("OUT_BASE",
-                     "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_2026")
+                     "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/sst_anomaly")
 
 MEMBERS = [1, 2, 3]
 

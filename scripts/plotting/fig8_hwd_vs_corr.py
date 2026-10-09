@@ -10,7 +10,7 @@ is processed; EERIE r2/r3) contributes the seasons it has. ERA5 2026 is a
 point like any other and enters the fit and its r (at x = 1 by construction):
 
   x   pattern correlation of its JJA SST pattern with ERA5 JJA 2026
-      (box mean removed, 1 deg common ocean mask; results/corr_spatial.nc)
+      (box mean removed, 1 deg common ocean mask; sst_pattern_corr/corr_spatial.nc)
   y   land-mean JJA heatwave days over southern Europe, 35-60N, 10W-30E
       (src.heatwave.MEAN_BOX; Xu et al. 2026 definition, 1991-2020
       reference of the same dataset)
@@ -23,7 +23,7 @@ year; every other record (and EERIE member) minus its own least-squares line
 over all its seasons in the panel.
 
 With an argument `atl` or `med`, x is the pattern correlation scored over
-that half of the SST box alone (results/corr_spatial_<half>.nc; file suffix
+that half of the SST box alone (sst_pattern_corr/corr_spatial_<half>.nc; file suffix
 _atl / _med), and the ringed model seasons are re-selected on it.
 
 Points are coloured by the season's mean heatwave intensity: the mean Tmax

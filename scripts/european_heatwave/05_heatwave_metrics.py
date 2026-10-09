@@ -9,7 +9,7 @@ pooled over a centred 15-day window; detected in May-September. Reference
 period 1991-2020, each dataset (and each ensemble member) against its own
 climatology. Land only.
 
-Output, data/heatwave_2026/<ds>_heatwave_<grid>.nc:
+Output, data/heatwave/<ds>_heatwave_<grid>.nc:
   hwd, hwn, hwcum, hwmax,
   hwpeak, hwexcess, onset         ([member,] year, lat, lon)  -- see heatwave.season_metrics
   threshold                       ([member,] doy, lat, lon)   90th-percentile anomaly threshold

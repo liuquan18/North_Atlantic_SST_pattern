@@ -29,7 +29,7 @@ export REF_YEAR=2026
 
 export PROJECT_ROOT=/work/mh0033/m300883/North_Atlantic_SST_pattern
 export WORK_BASE=/scratch/m/m300883/nalt2026
-export OUT_BASE=${PROJECT_ROOT}/data/pattern_2026
+export OUT_BASE=${PROJECT_ROOT}/data/sst_anomaly
 
 mkdir -p "$WORK_BASE" "$OUT_BASE"
 

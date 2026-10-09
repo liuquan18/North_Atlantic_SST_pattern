@@ -3,7 +3,7 @@ Figure 12 -- how much of the resemblance to JJA 2026 comes from the Atlantic
 and how much from the Mediterranean? Season-by-season pattern correlation
 with ERA5 JJA 2026, scored three ways:
 
-  box   the whole analysis box, 20-60N, 80W-40E (results/corr_spatial.nc)
+  box   the whole analysis box, 20-60N, 80W-40E (sst_pattern_corr/corr_spatial.nc)
   atl   the Atlantic half alone, west of 0E       (corr_spatial_atl.nc)
   med   the Mediterranean half alone, east of 0E  (corr_spatial_med.nc)
 

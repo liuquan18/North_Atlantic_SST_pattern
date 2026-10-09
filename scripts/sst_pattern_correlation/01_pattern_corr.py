@@ -2,8 +2,8 @@
 Score every simulation against the observed JJA 2026 North Atlantic +
 Mediterranean SST pattern.
 
-Inputs  : data/pattern_2026/<ds>_jja_anom_na025.nc and <ds>_jja_gmsst.nc
-Outputs : data/pattern_2026/results/
+Inputs  : data/sst_anomaly/<ds>_jja_anom_na025.nc and <ds>_jja_gmsst.nc
+Outputs : data/sst_pattern_corr/
             corr_<variant>.nc        correlation time series per dataset
             corr_<variant>_<half>.nc the same, scored over the Atlantic (atl) or
                                      Mediterranean (med) half of the box alone

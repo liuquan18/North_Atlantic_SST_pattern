@@ -7,16 +7,16 @@ Methodology, data traps and results: [doc/pattern_2026.md](../doc/pattern_2026.m
 scripts/
 ├── config.sh          shared settings (region, climatology, paths, common grid, conda env)
 ├── run_analysis.sh    runs sst_pattern_correlation/ then plotting/ in order
-├── european_heatwave/ daily Tmax -> JJA heatwave metrics -> data/heatwave_2026/ (see its README)
-├── pre_process/       cdo stages, submitted with sbatch; raw model/obs data -> data/pattern_2026/
-├── sst_pattern_correlation/  pattern correlation and region means -> data/pattern_2026/results/
+├── european_heatwave/ daily Tmax -> JJA heatwave metrics -> data/heatwave/ (see its README)
+├── pre_process/       cdo stages, submitted with sbatch; raw model/obs data -> data/sst_anomaly/
+├── sst_pattern_correlation/  pattern correlation and region means -> data/sst_pattern_corr/
 └── plotting/          one script per figure -> figures/pattern_2026/
 ```
 
 ## pre_process/
 
 Each stage reduces one dataset to `<ds>_jja_anom_na025.nc` and `<ds>_jja_gmsst.nc`
-in `data/pattern_2026/`. Stages 01–05 are independent and idempotent.
+in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 
 | script | dataset |
 |---|---|
@@ -32,8 +32,8 @@ in `data/pattern_2026/`. Stages 01–05 are independent and idempotent.
 
 | script | output |
 |---|---|
-| `01_pattern_corr.py` | correlations (whole box and Atlantic / Mediterranean halves), best analogues, bootstrap → `results/` |
-| `02_region_means.py` | area-mean JJA anomalies per region → `results/region_means.nc` |
+| `01_pattern_corr.py` | correlations (whole box and Atlantic / Mediterranean halves), best analogues, bootstrap → `sst_pattern_corr/` |
+| `02_region_means.py` | area-mean JJA anomalies per region → `sst_pattern_corr/region_means.nc` |
 
 ## plotting/
 

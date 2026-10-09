@@ -17,7 +17,7 @@ import xarray as xr
 
 WORK = os.environ.get("WORK_BASE", "/scratch/m/m300883/nalt2026") + "/mpier"
 OUT = os.environ.get("OUT_BASE",
-                     "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/pattern_2026")
+                     "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/sst_anomaly")
 
 # readme: ER = member 1, ER3 = member 2, ER5 = member 3
 RUNS = [("ER", 1), ("ER3", 2), ("ER5", 3)]

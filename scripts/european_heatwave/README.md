@@ -28,7 +28,7 @@ The algorithm is in `src/heatwave.py` (tests: `test/test_heatwave.py`).
 | `07_epoc_tmean.sh` | EPOC daily MEAN T (control: Tmax only on tape; transient: for comparison) |
 | `03_eerie_tmax.sh` | EERIE ICON-ESM-ER: r1 `day/tasmax` (`gr`) 1991–2050; r2, r3 raw `atm_2d_1d_max_remap025` 1991–2020 |
 | `04_mpige_tmax.sh` | MPI-GE (MPI-ESM1-2-LR) CMIP6 `day/tasmax`, 50 members, historical + ssp245, 1850–2100, native grid |
-| `05_heatwave_metrics.py` | heatwave detection → `data/heatwave_2026/<ds>_heatwave_<eu025\|native>.nc`; takes dataset keys as arguments (default: all) |
+| `05_heatwave_metrics.py` | heatwave detection → `data/heatwave/<ds>_heatwave_<eu025\|native>.nc`; takes dataset keys as arguments (default: all) |
 | `run_heatwave.sh` | submits 01–04, then 05 once they finish |
 
 01–04 are SLURM jobs, independent and idempotent. They write daily Tmax for

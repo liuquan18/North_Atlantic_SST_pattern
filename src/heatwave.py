@@ -38,7 +38,7 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path("/work/mh0033/m300883/North_Atlantic_SST_pattern")
-DATA_DIR = PROJECT_ROOT / "data" / "heatwave_2026"
+DATA_DIR = PROJECT_ROOT / "data" / "heatwave"
 
 REF_PERIOD = (1991, 2020)
 PERCENTILE = 90.0

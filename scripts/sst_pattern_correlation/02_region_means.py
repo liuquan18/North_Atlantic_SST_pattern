@@ -16,7 +16,7 @@ are differences in SST, not in where each model thinks the coastline is. The
 global mean cannot be put on a common mask (the datasets have different global
 grids) and is each dataset's own, which for a global ocean mean is robust.
 
-Output: data/pattern_2026/results/region_means.nc  (+ region_means_2026.csv)
+Output: data/sst_pattern_corr/region_means.nc  (+ region_means_2026.csv)
 """
 import sys
 

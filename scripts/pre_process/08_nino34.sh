@@ -27,7 +27,7 @@
 #     Scratch is purged -- rerun those stages if they are gone.
 #   MPI-GE, EPOC hist + control: re-read from the permanent archives.
 #
-# Output: data/pattern_2026/nino34_jja.nc, laid out like results/corr_*.nc
+# Output: data/sst_anomaly/nino34_jja.nc, laid out like sst_pattern_corr/corr_*.nc
 # (one variable per dataset key and index, `year` plus `member_<key>`).
 
 set -euo pipefail

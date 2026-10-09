@@ -18,7 +18,7 @@
 # run, so seasons before FIRST_YEAR are not used.
 #
 # Products (same as every other dataset):
-#   data/pattern_2026/sap0006_jja_anom_na025.nc, sap0006_jja_gmsst.nc
+#   data/sst_anomaly/sap0006_jja_anom_na025.nc, sap0006_jja_gmsst.nc
 #   ${HW_WORK}/sap0006/tmax_<year>.nc   daily Tmax, Apr-Oct, GRID_EU025
 #
 # Anomalies against the run's own model years 1991-2020, like the other

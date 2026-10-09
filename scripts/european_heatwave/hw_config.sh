@@ -12,13 +12,13 @@
 # 1 May and 30 Sep reaches into 24 Apr and 7 Oct.
 #
 # The daily fields are scratch intermediates (regenerable from the archives);
-# only the per-year heatwave metrics go to data/heatwave_2026/.
+# only the per-year heatwave metrics go to data/heatwave/.
 
 source /work/mh0033/m300883/North_Atlantic_SST_pattern/scripts/config.sh
 
 export HW_MONTHS=4/10
 export HW_WORK=${WORK_BASE}/heatwave
-export HW_OUT=${PROJECT_ROOT}/data/heatwave_2026
+export HW_OUT=${PROJECT_ROOT}/data/heatwave
 mkdir -p "$HW_WORK" "$HW_OUT" "${PROJECT_ROOT}/logs"
 
 # --- common Europe grid: 30-72N, 15W-45E, 0.25 deg -------------------------

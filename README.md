@@ -22,7 +22,10 @@ North_Atlantic_SST_pattern/
 ├── src/                pattern_2026.py (analysis helpers), viz2026.py (styling)
 ├── test/               unit tests for src/
 ├── doc/                write-ups
-├── data/pattern_2026/  outputs (not tracked)
+├── data/              outputs (not tracked)
+│   ├── sst_anomaly/       per-dataset JJA SST anomalies (pre_process/)
+│   ├── sst_pattern_corr/  pattern correlation, region means (sst_pattern_correlation/)
+│   └── heatwave/          European heatwave metrics (european_heatwave/)
 ├── figures/pattern_2026/
 └── logs/               SLURM logs (not tracked)
 ```
