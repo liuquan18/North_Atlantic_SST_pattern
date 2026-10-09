@@ -17,6 +17,10 @@ dependencies:
   - h5netcdf>=1.2
   - dask>=2023.1
   
+  # Parallel computing
+  - mpi4py>=3.1
+  - openmpi>=4.1
+
   # Visualization
   - matplotlib>=3.7
   - cartopy>=0.21
