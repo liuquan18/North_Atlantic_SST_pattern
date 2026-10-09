@@ -238,6 +238,65 @@ Limits of the window approach:
   baseline (6.9 days against a window median of 2.7). Early ERA5 is the least
   certain part of the record.
 
+### 5. The same for temperature: TXx (fig 19)
+
+Block-maximum approach (`04_txx_table.py`, then `03_mpige_window_rp.py txx`):
+
+- **TXx** is the hottest day of each JJA in the land-mean daily Tmax over the
+  same box. That makes it a true block maximum (block = one summer).
+- Each dataset's TXx is an anomaly from its own 1991–2020 mean. MPI-GE's mean
+  TXx (27.3 °C) is 1.2 K below ERA5's (28.5 °C), and the anomaly removes that
+  bias.
+- MPI-GE's TXx year-to-year std is 1.21 K against ERA5's 1.06 K, much closer
+  than for heatwave days.
+- GEV shapes are bounded (ξ = −0.26 to −0.14), as expected for temperature
+  maxima.
+
+ERA5 TXx values:
+
+| | TXx | anomaly | date | rank in record |
+|---|---|---|---|---|
+| 2026 | 31.6 °C | +3.1 K | 27 June | #1 (next: 2025, 2019 at +1.9 K) |
+| 2003 | 29.8 °C | +1.3 K | 4 August | #8 |
+
+The 2003 heatwave was long and centred on France. A single-day mean over the
+whole 35–60°N, 10°W–30°E box dilutes it, so 2003 stands out far more in
+heatwave days than in box-mean TXx.
+
+Return period in the MPI-GE climate of each year (95% bootstrap CI; k of 500):
+
+| year | anomaly | return period | k |
+|---|---|---|---|
+| **2026** | +3.1 K | **15 yr (12–21)** | 30 |
+| 1994 | +0.9 K | 11 yr (9–14) | 48 |
+| 2006, 1952 | +1.5, +0.2 K | 7 yr | 63–64 |
+| **2003** | +1.3 K | **6 yr (5–8)** | 68 |
+
+In other climates:
+
+| | 1950s | 2003 | 2026 |
+|---|---|---|---|
+| 2003 TXx (+1.3 K) | 34 yr | 6.3 yr | 2.7 yr |
+| 2026 TXx (+3.1 K) | ≥3,900 yr | 112 yr | 15 yr |
+
+From about 1955 to 1993 the +3.1 K value lies above the upper bound of the
+fitted GEV or beyond 10⁴ years in most windows; it is drawn at 10⁴ years. In
+the MPI-GE climate of those decades, a 2026-sized TXx is effectively out of
+reach.
+
+**Detrending versus the window approach disagree for TXx.** With a quadratic
+trend removed from ERA5 (as fig 17 does for heatwave days), 2026 is only #5
+(+1.3 K), behind 1994, 1952, 2003 and 2006. The observed TXx rises steeply
+after 2015, so the trend line is already high by 2026. Scored against MPI-GE's
+2021–2030 climate, 2026 is #1. MPI-GE warms more slowly than observed, so its
+2021–2030 window is cooler than ERA5's recent baseline. The calendar-matching
+caveat of section 4 matters more for TXx than for heatwave days.
+
+The within-window ensemble-mean trend reaches 1.3 K (about 1σ) in the windows
+centred on 1996–2001. This probably reflects the post-Pinatubo cooling and
+recovery in the forcing. The windows for 2003 and 2026 carry only 0.5 K and
+0.3 K.
+
 ## Bottom line
 
 1. **2003** is the most robust "extreme for its time" summer in the record:

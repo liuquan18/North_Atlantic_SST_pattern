@@ -7,7 +7,7 @@
 #SBATCH --account=mh0033
 #
 # Heatwave statistics for ERA5 2003 / 2026 (see 02_statistics.py) and their
-# figures 13-16 and 18. Needs data/heatwave/ (european_heatwave/) and
+# figures 13-16, 18 and 19. Needs data/heatwave/ (european_heatwave/) and
 # data/sst_anomaly/*_jja_gmsst.nc (pre_process/). The bootstrap refits use the
 # node's cores; on a login node `bash run_statistics.sh` also works, slower.
 set -euo pipefail
@@ -19,7 +19,9 @@ HS=${SCRIPTS}/heatwave_statistics
 
 python3 "${HS}/01_season_table.py"
 python3 "${HS}/02_statistics.py"
-python3 "${HS}/03_mpige_window_rp.py"
-for f in "${HS}"/fig1[3-8]_*.py; do
+python3 "${HS}/03_mpige_window_rp.py" hwd
+python3 "${HS}/04_txx_table.py"
+python3 "${HS}/03_mpige_window_rp.py" txx
+for f in "${HS}"/fig1[3-9]_*.py; do
     python3 "$f"
 done

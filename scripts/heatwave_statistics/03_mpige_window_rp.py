@@ -17,16 +17,21 @@ scored against the window centred on its own calendar year.
            above a bounded (xi < 0) fit's upper end
   check    empirical k of 500 with a Clopper-Pearson interval -- no fit
 
-Index: land-mean JJA heatwave days over src.heatwave.MEAN_BOX (as fig 17),
-each dataset against its own 1991-2020 threshold. MPI-GE is used as is: it
-is ~1.4x as variable as ERA5 (1991-2020 std 3.7 vs 2.7 days), which makes
+Both indices are land means over src.heatwave.MEAN_BOX, each dataset against
+its own 1991-2020 climate. MPI-GE is used as is: for heatwave days it is
+~1.4x as variable as ERA5 (1991-2020 std 3.7 vs 2.7 days), which makes
 ERA5 values look more frequent (shorter return periods); and it warms more
 slowly than observed after ~2015, so recent ERA5 years are scored against a
 cooler model climate.
 
-Input : data/heatwave_stats/season_table.csv (01_season_table.py)
-Output: data/heatwave_stats/mpige_window_gev.csv   one row per window
-        data/heatwave_stats/era5_rp_in_mpige.csv   one row per ERA5 season
+Index: argument `hwd` (default) or `txx`:
+  hwd  heatwave days, from season_table.csv (01_season_table.py)
+  txx  TXx anomaly, the hottest day of JJA in land-mean daily Tmax relative to
+       the dataset's own 1991-2020 mean, from txx_table.csv (04_txx_table.py)
+
+Output: data/heatwave_stats/mpige_window_gev<suffix>.csv   one row per window
+        data/heatwave_stats/era5_rp_in_mpige<suffix>.csv   one row per ERA5 season
+        (suffix "" for hwd, "_txx" for txx)
 """
 import os
 import sys
@@ -40,7 +45,9 @@ sys.path.insert(0, str(ROOT))
 import src.extremes as ex
 
 DIR = ROOT / "data" / "heatwave_stats"
-METRIC = "hwd"
+#: index -> (table, column, output suffix)
+METRICS = {"hwd": ("season_table.csv", "hwd", ""),
+           "txx": ("txx_table.csv", "txx_anom", "_txx")}
 #: window offsets around the ERA5 year: y-5 .. y+4
 WIN_BEFORE, WIN_AFTER = 5, 4
 RETURN_PERIODS = [2, 5, 10, 20, 50, 100, 500]
@@ -52,8 +59,9 @@ def window(mpige, year):
     return mpige[mpige.year.between(year - WIN_BEFORE, year + WIN_AFTER)]
 
 
-def main():
-    t = pd.read_csv(DIR / "season_table.csv")
+def main(index="hwd"):
+    table, METRIC, suffix = METRICS[index]
+    t = pd.read_csv(DIR / table)
     mpige = t[t.dataset == "MPI-GE"]
     era5 = t[t.dataset == "ERA5"].sort_values("year").set_index("year")[METRIC]
 
@@ -85,20 +93,21 @@ def main():
 
     gev = pd.DataFrame(gev_rows)
     rps = pd.DataFrame(rp_rows)
-    gev.to_csv(DIR / "mpige_window_gev.csv", index=False, float_format="%.5g")
-    rps.to_csv(DIR / "era5_rp_in_mpige.csv", index=False, float_format="%.5g")
+    gev.to_csv(DIR / f"mpige_window_gev{suffix}.csv", index=False, float_format="%.5g")
+    rps.to_csv(DIR / f"era5_rp_in_mpige{suffix}.csv", index=False, float_format="%.5g")
 
     assert (gev.n == 500).all(), "every window should hold 10 years x 50 members"
     print(f"  {len(gev)} windows of {gev.n.iloc[0]} seasons, {N_BOOT} bootstrap refits each")
-    print(f"  ensemble-mean trend inside the window: max {gev.trend_in_window.abs().max():.2f} "
-          f"days (window std {gev['std'].min():.1f}-{gev['std'].max():.1f})")
+    print(f"  [{index}] ensemble-mean trend inside the window: max "
+          f"{gev.trend_in_window.abs().max():.2f} (window std {gev['std'].min():.2f}-"
+          f"{gev['std'].max():.2f})")
     top = rps.replace(np.inf, 1e9).sort_values("rp", ascending=False).head(8)
     for _, r in top.iterrows():
         rp_txt = "inf" if r.above_upper_end else f"{r.rp:.0f}"
-        print(f"  {int(r.year)}: {r.value:5.1f} days  RP {rp_txt:>6s} yr "
+        print(f"  {int(r.year)}: {r.value:6.2f}  RP {rp_txt:>6s} yr "
               f"({r.rp_lo:.0f}-{r.rp_hi:.0f})  empirical {int(r.k)}/{int(r.n)}")
-    print(f"wrote {DIR / 'mpige_window_gev.csv'}, {DIR / 'era5_rp_in_mpige.csv'}")
+    print(f"wrote {DIR / f'mpige_window_gev{suffix}.csv'}, {DIR / f'era5_rp_in_mpige{suffix}.csv'}")
 
 
 if __name__ == "__main__":
-    main()
+    main(*sys.argv[1:2])
