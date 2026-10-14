@@ -37,6 +37,7 @@ import textwrap
 from pathlib import Path
 
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
 from cartopy.mpl.feature_artist import FeatureArtist
 from cartopy.mpl.gridliner import Gridliner
 import matplotlib.pyplot as plt
@@ -164,7 +165,8 @@ def inset_sst(fig, ax, field):
     m.set_facecolor("white")
     for art in list(m.collections) + list(m.artists):
         if isinstance(art, FeatureArtist) and art._kwargs.get("facecolor") == vz.LAND:
-            art._kwargs["facecolor"] = "white"
+            art.remove()
+    m.add_feature(cfeature.LAND, facecolor="white", edgecolor="none", zorder=2)
     finish_inset(fig, m, im, f"SST pattern (°C)\nJJA {p2.REF_YEAR}",
                  np.linspace(-VMAX_CAP, VMAX_CAP, 5))
 
