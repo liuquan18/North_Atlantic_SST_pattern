@@ -190,11 +190,12 @@ def panel_series(ax, years, raw, anom, spec):
               handlelength=1.6, ncol=2)
 
 
-def draw_levels(ax, gev, levels, styles=("-", "-", (0, (3, 1.5))), extra=()):
+def draw_levels(ax, gev, levels, styles=("-", "-", (0, (3, 1.5))), extra=(), span=None):
     """
     The window's three levels as shaded blue bands, plus any `extra` (column,
     name, linestyle) lines, labelled at the right end; labels that would touch
-    are pushed apart upwards.
+    are pushed apart upwards, by a fraction of `span` (the y-axis range, if
+    known) or else of the levels' own range.
     """
     yr = gev.year.values
     (c1, _), (c2, _), (c3, _) = levels
@@ -203,7 +204,7 @@ def draw_levels(ax, gev, levels, styles=("-", "-", (0, (3, 1.5))), extra=()):
     lines = [(col, name, ls) for (col, name), ls in zip(levels, styles)] + list(extra)
     for col, _, ls in lines:
         ax.plot(yr, gev[col], color=BAND, lw=0.8, ls=ls, zorder=2)
-    gap = 0.09 * (gev[c3].max() - gev[c1].min())
+    gap = 0.09 * (gev[c3].max() - gev[c1].min()) if span is None else 0.065 * span
     ends = sorted((float(gev[col].iloc[-1]), name) for col, name, _ in lines)
     y_prev = -np.inf
     for y, name in ends:
@@ -225,19 +226,21 @@ def panel_map(ax, gev, rp, values, spec, levels):
     ax.set_ylim(0 if lo >= 0 else padded(lo, hi)[0], hi + 0.12 * (hi - min(lo, 0)))
 
 
-def panel_series_levels(ax, win, years, raw, spec, levels, marked):
-    """(a) for method="rank": the observed ERA5 series on the MPI-GE window percentiles."""
-    draw_levels(ax, win, levels, styles=("-", "-", "-"), extra=(("mean", "mean", "--"),))
+def panel_series_levels(ax, win, years, raw, spec, levels, marked, name="ERA5"):
+    """(a) for method="rank": the `name` (ERA5) series on the MPI-GE window percentiles."""
+    lo, hi = padded(min(raw.min(), win[levels[0][0]].min(), 0),
+                    max(raw.max(), win[levels[-1][0]].max()))
+    draw_levels(ax, win, levels, styles=("-", "-", "-"), extra=(("mean", "mean", "--"),),
+                span=hi - lo)
     ax.plot(years, raw, color=OBS, lw=1.2, zorder=3)
     for y in marked:
         k = int(np.flatnonzero(years == y)[0])
         ax.plot(y, raw[k], "o", ms=3.5, color=OBS, mec="white", mew=0.6, zorder=4)
         label(ax, y, raw[k], str(y), fontweight="bold")
-    ax.set_ylim(*padded(min(raw.min(), win[levels[0][0]].min(), 0),
-                        max(raw.max(), win[levels[-1][0]].max())))
+    ax.set_ylim(lo, hi)
     ax.set_ylabel(spec["ylabel"], fontsize=FS)
     handles = [
-        plt.Line2D([], [], color=OBS, lw=1.2, label="ERA5"),
+        plt.Line2D([], [], color=OBS, lw=1.2, label=name),
         plt.Rectangle((0, 0), 1, 1, color=BAND, alpha=0.3, lw=0, label="MPI-GE percentiles"),
         plt.Line2D([], [], color=BAND, lw=0.8, ls="--", label="MPI-GE mean"),
     ]
@@ -366,6 +369,19 @@ def tag(ax, letter):
             fontweight="bold")
 
 
+def style_axes(axes):
+    for a in axes:
+        a.set_facecolor("white")
+        a.grid(False)
+        for side in ("top", "right"):
+            a.spines[side].set_visible(False)
+        for side in ("left", "bottom"):
+            a.spines[side].set_linewidth(0.6)
+            a.spines[side].set_color(vz.INK)
+        a.tick_params(labelsize=FS, direction="out", length=2.5, width=0.6, pad=2,
+                      colors=vz.INK)
+
+
 def main(index="hwd", method="gev"):
     spec, meth = SPECS[index], METHODS[method]
     vz.use_style()
@@ -400,16 +416,7 @@ def main(index="hwd", method="gev"):
     for a, letter in zip(axes, "abc"):
         tag(a, letter)
 
-    for a in axes:
-        a.set_facecolor("white")
-        a.grid(False)
-        for side in ("top", "right"):
-            a.spines[side].set_visible(False)
-        for side in ("left", "bottom"):
-            a.spines[side].set_linewidth(0.6)
-            a.spines[side].set_color(vz.INK)
-        a.tick_params(labelsize=FS, direction="out", length=2.5, width=0.6, pad=2,
-                      colors=vz.INK)
+    style_axes(axes)
     bx.set_xlim(gev.year.iloc[0] - 1, gev.year.iloc[-1] + 2)
 
     title = CAPTION_TITLE if method == "gev" else CAPTION_TITLE_RANK

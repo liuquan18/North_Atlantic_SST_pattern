@@ -403,6 +403,38 @@ def region_masks(ocean_mask: xr.DataArray) -> dict[str, xr.DataArray]:
     }
 
 
+#: Box-difference index of the JJA 2026 pattern: Mediterranean minus
+#: mid-latitude North Atlantic area-mean SST anomaly. A pattern correlation is
+#: dominated by small-scale structure that models at different resolution
+#: cannot place in the same spot; the difference of two large boxes keeps only
+#: the basin-scale contrast of 2026 (warm Mediterranean, near-normal
+#: mid-latitude Atlantic), and the warming common to both boxes
+#: largely cancels. Signed so that a 2026-like summer is positive.
+DIPOLE_BOXES = {
+    "nal": dict(label="North Atlantic", detail="40–50°N, 60–20°W",
+                lon=(-60.0, -20.0), lat=(40.0, 50.0)),
+    "med": dict(label="Mediterranean", detail="30–45°N, 0–20°E",
+                lon=(0.0, 20.0), lat=(30.0, 45.0)),
+}
+DIPOLE_LABEL = "MED − NAL"
+
+
+def dipole_file() -> Path:
+    """sst_pattern_corr/box_difference.nc"""
+    return RESULT_DIR / "box_difference.nc"
+
+
+def dipole_index(coarse: xr.DataArray, ocean_mask: xr.DataArray) -> dict[str, xr.DataArray]:
+    """
+    Area-mean anomaly over each DIPOLE_BOXES box on the common 1 deg ocean
+    mask, and the index med - nal, from a 1 deg field (coarsen_to_1deg).
+    """
+    out = {k: area_mean(coarse, ocean_mask & in_box(ocean_mask, b))
+           for k, b in DIPOLE_BOXES.items()}
+    out["index"] = out["med"] - out["nal"]
+    return out
+
+
 def member_dim(da: xr.DataArray) -> str | None:
     """
     Name of the ensemble dimension of `da`, or None if it has none.

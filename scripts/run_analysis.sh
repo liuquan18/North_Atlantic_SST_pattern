@@ -10,6 +10,7 @@ cd "$PROJECT_ROOT"
 
 python3 "${SCRIPTS}/sst_pattern_correlation/01_pattern_corr.py"
 python3 "${SCRIPTS}/sst_pattern_correlation/02_region_means.py"
+python3 "${SCRIPTS}/sst_pattern_correlation/03_box_difference.py"
 
 python3 "${SCRIPTS}/plotting/fig1_patterns_era5.py"
 python3 "${SCRIPTS}/plotting/fig1_patterns_simulations.py"

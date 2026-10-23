@@ -6,7 +6,8 @@ in ERA5 (1940–2026) and in the simulations. Methods and results:
 code: `src/extremes.py` (tests `test/test_extremes.py`).
 
 Needs `data/heatwave/` (from `european_heatwave/`, ERA5 from 1940) and
-`data/sst_anomaly/*_jja_gmsst.nc` (from `pre_process/`).
+`data/sst_anomaly/*_jja_gmsst.nc` (from `pre_process/`); figs 22–23 also
+`data/sst_pattern_corr/` (from `sst_pattern_correlation/`).
 
 | script | output |
 |---|---|
@@ -22,6 +23,8 @@ Needs `data/heatwave/` (from `european_heatwave/`, ERA5 from 1940) and
 | `fig18_era5_return_period_mpige.py` | (a) MPI-GE window return levels with ERA5 on top; (b) return period of each ERA5 summer vs year |
 | `fig19_era5_txx_return_period_mpige.py` | the same three panels for TXx |
 | `fig20_…_rank.py`, `fig21_…_rank.py` | figs 18 / 19 from the ranks (05) instead of the GEV, in two panels: (a) ERA5 on the window percentiles, (b) percentile rank of each ERA5 summer (50% line = MPI-GE median) |
+| `fig22_era5_hwd_corr_mpige.py` | (a) as fig 20 (a); (b) the same for the SST pattern: ERA5 pattern correlation with JJA 2026 on the MPI-GE window percentiles and mean (reads `data/sst_pattern_corr/`); (c) the same for the box-difference index MED − NAL (`box_difference.nc`, from `sst_pattern_correlation/03`); right column: box plots of all three quantities for ERA5 (1991–2026) and ICON-EPOC, ICON-EERIE and MPI-ER (historical + scenario 1991–2030 where available) |
+| `fig23_epoc_hwd_corr_mpige.py` | as fig 22 with ICON-EPOC (hist + SSP5-8.5, 1990–2025) as the black line; marks the EPOC summers ranked ≥ 90% of their window in heatwave days |
 | `run_statistics.sh` | all of the above; `sbatch run_statistics.sh` (~35 min on one node; the two 03 runs take most of it) |
 
 `HWS_N_BOOT=20 python3 02_statistics.py` gives a quick test run.

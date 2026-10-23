@@ -34,6 +34,7 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 |---|---|
 | `01_pattern_corr.py` | correlations (whole box and Atlantic / Mediterranean halves), best analogues, bootstrap → `sst_pattern_corr/` |
 | `02_region_means.py` | area-mean JJA anomalies per region → `sst_pattern_corr/region_means.nc` |
+| `03_box_difference.py` | box-difference index MED − NAL (30–45°N 0–20°E minus 40–50°N 60–20°W) → `sst_pattern_corr/box_difference.nc` |
 
 ## plotting/
 
