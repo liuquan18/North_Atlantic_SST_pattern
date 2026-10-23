@@ -1,7 +1,8 @@
 """
 Figure 1 (ERA5) -- European summer heatwaves and the North Atlantic +
 Mediterranean SST pattern in observed summers: JJA 2026 and the two earlier
-benchmark heatwave summers, JJA 2015 and JJA 2003.
+summers that, like it, rank at or above 90% of the MPI-GE summers of their own
+climate in heatwave days (figure 20): JJA 2003 and JJA 1947.
 
   top row     JJA heatwave days over European land (Xu et al. 2026 definition,
               1991-2020 reference; scripts/european_heatwave/)
@@ -22,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import src.pattern_2026 as p2
 from fig1_patterns_simulations import VARIANT, column, plot_figure, scored_over, sst_box
 
-YEARS = [p2.REF_YEAR, 2015, 2003]
+YEARS = [p2.REF_YEAR, 2003, 1947]
 
 
 def main(half=None):

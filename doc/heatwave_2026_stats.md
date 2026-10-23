@@ -324,14 +324,18 @@ the whole ensemble of its own window.
 Ranking saturates at 100%: it cannot tell how far beyond the ensemble a value
 lies. The 2026 heatwave-day value is above all 500 summers in every window up
 to 1997 (58 windows), and the 2026 TXx in 45 windows between 1953 and 1997.
-The cross-climate numbers (1950s: mean over 1950–1959 windows):
+The cross-climate numbers (1950s: mean over 1950–1959 windows), for 2003,
+2026 and every other summer ranked at or above 90% in its own window
+(1947 for heatwave days, 1994 for TXx):
 
 | | 1950s | 2003 | 2026 |
 |---|---|---|---|
 | 2003 heatwave days | 99.1% | 92.8% | 64.4% |
 | 2026 heatwave days | 100.0% | 99.4% | 95.0% |
+| 1947 heatwave days | 93.2% | 74.2% | 37.4% |
 | 2003 TXx | 97.0% | 86.4% | 62.4% |
 | 2026 TXx | 99.9% | 98.8% | 94.0% |
+| 1994 TXx | 95.8% | 78.6% | 52.8% |
 
 Out-of-sample test of the GEV: fitted to 25 members and checked on the other
 25, pooled over all 87 windows (43,500 summers). The GEV's 1-in-10/50/100
