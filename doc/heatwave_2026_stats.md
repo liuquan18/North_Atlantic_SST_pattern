@@ -299,36 +299,39 @@ recovery in the forcing. The windows for 2003 and 2026 carry only 0.5 K and
 
 ### 6. Ranking only, no fitted distribution (figs 20, 21)
 
-The same windows, without any distribution (`05_mpige_window_rank.py`):
+The same windows, without any distribution and without return periods
+(`05_mpige_window_rank.py`). Each ERA5 summer is placed, from small to large,
+among the 500 MPI-GE summers of its window:
 
-- k is the number of the 500 MPI-GE summers at or above the ERA5 value.
-- The ERA5 summer then ranks k + 1 among the 501 values, giving a return
-  period of 501 / (k + 1) years (Weibull plotting position).
-- The interval is the binomial (Clopper–Pearson) interval of k / 500.
-- Return levels are the window's 50th, 90th and 99th percentiles.
+- Percentile rank = 100 × (number below + ½ number equal) / 500: 0% is under
+  every MPI-GE summer, 100% above all of them.
+- The interval is Clopper–Pearson: the lower bound from the count below, the
+  upper from the count at or below.
+- Panel (a) shows the window's 50th, 90th and 99th percentiles, the levels
+  exceeded by half, a tenth and a hundredth of its summers.
 
-| | rank-based | GEV (sections 4, 5) |
+| | percentile rank | GEV, as 100 (1 − 1/RP) |
 |---|---|---|
-| 2026 heatwave days | 19 yr (14–31), k = 25 | 22 yr (17–31) |
-| 2003 heatwave days | 14 yr (10–20), k = 36 | 13 yr (10–16) |
-| 2026 TXx | 16 yr (12–24), k = 30 | 15 yr (12–21) |
-| 2003 TXx | 7.3 yr, k = 68 | 6.3 yr (5–8) |
+| 2026 heatwave days | 95.0% (92.7–96.7) | 95.5% |
+| 2003 heatwave days | 92.8% (90.2–94.9) | 92.3% |
+| 2026 TXx | 94.0% (91.5–95.9) | 93.3% |
+| 2003 TXx | 86.4% (83.1–89.3) | 84.1% |
 
 Within the record the two methods agree, and the ranking (2026 then 2003 for
-heatwave days; 2026 first for TXx) is unchanged. No ERA5 summer lies beyond
+heatwave days; 2026 first for TXx) is unchanged. No ERA5 summer lies above
 the whole ensemble of its own window.
 
-Ranking cannot extrapolate. A value that no MPI-GE summer reaches only gets
-"≥ 501 yr". That is the case for the 2026 heatwave-day value in every window
-up to the late 1990s, and for the 2026 TXx in most windows from 1953 to 1997.
-The cross-climate numbers become:
+Ranking saturates at 100%: it cannot tell how far beyond the ensemble a value
+lies. The 2026 heatwave-day value is above all 500 summers in every window up
+to 1997 (58 windows), and the 2026 TXx in 45 windows between 1953 and 1997.
+The cross-climate numbers (1950s: mean over 1950–1959 windows):
 
 | | 1950s | 2003 | 2026 |
 |---|---|---|---|
-| 2003 heatwave days | 97 yr | 14 yr | 2.8 yr |
-| 2026 heatwave days | ≥ 501 yr | 125 yr | 19 yr |
-| 2003 TXx | 32 yr | 7.3 yr | 2.7 yr |
-| 2026 TXx | ≥ 407 yr | 72 yr | 16 yr |
+| 2003 heatwave days | 99.1% | 92.8% | 64.4% |
+| 2026 heatwave days | 100.0% | 99.4% | 95.0% |
+| 2003 TXx | 97.0% | 86.4% | 62.4% |
+| 2026 TXx | 99.9% | 98.8% | 94.0% |
 
 Out-of-sample test of the GEV: fitted to 25 members and checked on the other
 25, pooled over all 87 windows (43,500 summers). The GEV's 1-in-10/50/100
