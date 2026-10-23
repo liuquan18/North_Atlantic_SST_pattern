@@ -22,6 +22,11 @@ below, white background. ERA5 is black in every row. The same figure for TXx (ho
 daily Tmax) is fig 19: fig19_era5_txx_return_period_mpige.py calls main("txx").
 Return periods beyond RP_CAP (or above a bounded GEV's upper end) are
 extrapolation far past 500 seasons and are drawn at RP_CAP.
+
+main(index, method="rank") draws the same figure without any fitted
+distribution (05_mpige_window_rank.py): return period 501 / (k + 1) from the
+rank of the ERA5 value among the 500 MPI-GE summers, binomial 95% interval,
+percentiles as return levels -- figs 20 (heatwave days) and 21 (TXx).
 """
 import sys
 import textwrap
@@ -83,15 +88,46 @@ CAPTION_TXX = (
     "TXx as high as 2026 / 2003 in the MPI-GE climate of every year; drawn at 10,000 years where "
     "the fit gives more or puts the value above its upper bound. MPI-GE TXx varies about 1.1 "
     "times as much as ERA5's and warms more slowly than observed after about 2015.")
+RANK_B = ("{what} that MPI-ESM1.2-LR reaches once in 2, 10 and 100 summers: the 50th, 90th and "
+          "99th percentiles of its 50 members in the 10 years around each year (y−5 to y+4, 500 "
+          "summers), no fitted distribution; black: ERA5. (c) Return period of each ERA5 summer "
+          "from its rank among those 500 summers: 501 / (k + 1) years when k of them reach the "
+          "observed value, with 95% binomial interval (grey). Dashed / dotted: the same for a "
+          "summer as large as 2026 / 2003 in every year's window; marked ≥ where none of the 500 "
+          "reaches it (501 years is the longest return period 500 summers can resolve). ")
+CAPTION_HWD_RANK = (
+    f"(a) ERA5 June–August heatwave days averaged over land in {hw.MEAN_BOX_LABEL}: as observed "
+    "(black) and as departure from a quadratic long-term trend fitted to 1940–2026 (grey), as in "
+    "Fig. 17. (b) " + RANK_B.format(what="Heatwave days") +
+    "A heatwave is ≥3 days with daily maximum temperature above the calendar-day 90th percentile "
+    "of 1991–2020 of the same dataset (Xu et al. 2026). MPI-GE is used as simulated: its summers "
+    "vary about 1.4 times as much as ERA5's, which shortens return periods, and it warms more "
+    "slowly than observed after about 2015.")
+CAPTION_TXX_RANK = (
+    "(a) ERA5 TXx — the hottest day of June–August in daily maximum temperature averaged over "
+    f"land in {hw.MEAN_BOX_LABEL} — as anomaly from its 1991–2020 mean (black) and as departure "
+    "from a quadratic long-term trend fitted to 1940–2026 (grey). (b) " +
+    RANK_B.format(what="TXx anomaly (against MPI-GE's own 1991–2020 mean)") +
+    "MPI-GE TXx varies about 1.1 times as much as ERA5's and warms more slowly than observed "
+    "after about 2015.")
+
+#: per method: input tables, output name suffix, legend name of the estimate
+METHODS = {
+    "gev": dict(windows="mpige_window_gev", rp="era5_rp_in_mpige", out="", name="GEV"),
+    "rank": dict(windows="mpige_window_rank", rp="era5_rank_in_mpige", out="_rank", name="rank"),
+}
+OUT_RANK = {"hwd": "fig20_era5_return_period_mpige_rank",
+            "txx": "fig21_era5_txx_return_period_mpige_rank"}
 
 #: per index: input suffix, output name, axis label, value format, panel (a) loader, caption
 SPECS = {
     "hwd": dict(suffix="", out="fig18_era5_return_period_mpige", ylabel="Heatwave days (JJA)",
                 fmt=lambda v: f"{v:.1f} d", series="hwd", caption=CAPTION_HWD,
+                caption_rank=CAPTION_HWD_RANK,
                 tag_a="ERA5, observed and with the quadratic trend removed"),
     "txx": dict(suffix="_txx", out="fig19_era5_txx_return_period_mpige",
                 ylabel="TXx anomaly (K)", fmt=lambda v: f"{v:+.1f} K", series="txx",
-                caption=CAPTION_TXX,
+                caption=CAPTION_TXX, caption_rank=CAPTION_TXX_RANK,
                 tag_a="ERA5 TXx, anomaly and trend removed"),
 }
 
@@ -167,12 +203,23 @@ def panel_map(ax, gev, rp, values, spec):
     ax.set_ylim(0 if lo >= 0 else padded(lo, hi)[0], hi + 0.12 * (hi - min(lo, 0)))
 
 
-def panel_rp(bx, gev, rp, values, fits, spec):
+def fixed_curves(method, win, values):
+    """
+    Return period of a 2003- / 2026-sized summer in every window, and where it
+    is only a lower bound: beyond RP_CAP or a bounded GEV's upper end (gev), or
+    beyond all 500 summers (rank).
+    """
+    if method == "gev":
+        fits = window_gevs(win)
+        raw = {ev: np.array([f.return_period(v, 0.0) for f in fits]) for ev, v in values.items()}
+        return ({ev: np.minimum(c, RP_CAP) for ev, c in raw.items()},
+                {ev: c >= RP_CAP for ev, c in raw.items()})
+    return ({ev: win[f"rp_fixed_{ev}"].values for ev in values},
+            {ev: win[f"k_fixed_{ev}"].values == 0 for ev in values})
+
+
+def panel_rp(bx, gev, rp, values, fixed, bound, spec, estimate):
     yr = gev.year.values
-    # how rare a 2003- / 2026-sized summer would be in every year's climate;
-    # beyond RP_CAP (or above a bounded fit's upper end) it is drawn at RP_CAP
-    raw_rp = {ev: np.array([f.return_period(v, 0.0) for f in fits]) for ev, v in values.items()}
-    fixed = {ev: np.minimum(c, RP_CAP) for ev, c in raw_rp.items()}
     for ev, curve in fixed.items():
         bx.plot(yr, curve, color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE[ev], zorder=2)
         for name, (a, b) in LABEL_AT.items():
@@ -183,7 +230,7 @@ def panel_rp(bx, gev, rp, values, fits, spec):
                 continue
             bx.plot(x, v, "o", ms=2.6, color=vz.INK_SOFT, zorder=3)
             # a decade that contains capped windows only gives a lower bound
-            txt = ("≥" if (raw_rp[ev][sel] >= RP_CAP).any() else "") + fmt_rp(v)
+            txt = ("≥" if bound[ev][sel].any() else "") + fmt_rp(v)
             # at 2003 the event's own bold label sits just below: go above the point
             up = name == "2003"
             bx.annotate(txt + (" (1950s)" if name == "1950s" else ""), (x, v),
@@ -192,12 +239,13 @@ def panel_rp(bx, gev, rp, values, fits, spec):
                         fontsize=FS - 1, color=vz.INK_SOFT, zorder=5, bbox=WHITE)
 
     finite = np.isfinite(rp.rp)
-    bx.fill_between(rp.year, rp.rp_lo, rp.rp_hi, color=OBS, alpha=0.15, lw=0, zorder=1)
+    bx.fill_between(rp.year, rp.rp_lo, np.minimum(rp.rp_hi, RP_CAP), color=OBS, alpha=0.15,
+                    lw=0, zorder=1)
     bx.plot(rp.year[finite], rp.rp[finite], color=OBS, lw=1.2, zorder=3)
     bx.scatter(rp.year[finite], rp.rp[finite], s=7, color=OBS, zorder=4, lw=0)
     for y in MARKED:
         r = rp[rp.year == y].iloc[0]
-        txt = "∞" if r.above_upper_end else fmt_rp(r.rp)
+        txt = "∞" if r.get("above_upper_end", False) else fmt_rp(r.rp)
         label(bx, y, r.rp if np.isfinite(r.rp) else r.rp_lo, f"{y}\n{txt}", dy=4,
               fontweight="bold", linespacing=1.1, bbox=WHITE)
     bx.set_yscale("log")
@@ -209,7 +257,7 @@ def panel_rp(bx, gev, rp, values, fits, spec):
     bx.set_yticks(ticks, [f"{t:,}" for t in ticks])
     bx.set_ylabel("Return period (years)", fontsize=FS)
     handles = [
-        plt.Line2D([], [], color=OBS, lw=1.2, marker="o", ms=2.5, label="ERA5 summer, GEV"),
+        plt.Line2D([], [], color=OBS, lw=1.2, marker="o", ms=2.5, label=f"ERA5 summer, {estimate}"),
         plt.Rectangle((0, 0), 1, 1, color=OBS, alpha=0.15, lw=0, label="95% interval"),
         plt.Line2D([], [], color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE[2026],
                    label=f"2026-like summer ({spec['fmt'](values[2026])})"),
@@ -226,14 +274,14 @@ def tag(ax, letter):
             fontweight="bold")
 
 
-def main(index="hwd"):
-    spec = SPECS[index]
+def main(index="hwd", method="gev"):
+    spec, meth = SPECS[index], METHODS[method]
     vz.use_style()
-    gev = pd.read_csv(DIR / f"mpige_window_gev{spec['suffix']}.csv")
-    rp = pd.read_csv(DIR / f"era5_rp_in_mpige{spec['suffix']}.csv")
+    gev = pd.read_csv(DIR / f"{meth['windows']}{spec['suffix']}.csv")
+    rp = pd.read_csv(DIR / f"{meth['rp']}{spec['suffix']}.csv")
     years, raw, anom = load_series(spec["series"])
     values = {y: float(rp.loc[rp.year == y, "value"].iloc[0]) for y in MARKED}
-    fits = window_gevs(gev)
+    fixed, bound = fixed_curves(method, gev, values)
 
     fig, (sx, ax, bx) = plt.subplots(3, 1, figsize=FIG_SIZE, sharex=True,
                                      gridspec_kw=dict(height_ratios=[0.85, 1, 1.25],
@@ -243,7 +291,7 @@ def main(index="hwd"):
 
     panel_series(sx, years, raw, anom, spec)
     panel_map(ax, gev, rp, values, spec)
-    panel_rp(bx, gev, rp, values, fits, spec)
+    panel_rp(bx, gev, rp, values, fixed, bound, spec, meth["name"])
     tag(sx, "a", )
     tag(ax, "b", )
     tag(bx, "c", )
@@ -262,9 +310,10 @@ def main(index="hwd"):
 
     fig.text(0.012, CAPTION_SPACE - 0.005, CAPTION_TITLE, ha="left", va="top", fontsize=FS,
              fontweight="bold", color=vz.INK)
-    fig.text(0.012, CAPTION_SPACE - 0.033, textwrap.fill(spec["caption"], 122), ha="left",
+    caption = spec["caption"] if method == "gev" else spec["caption_rank"]
+    fig.text(0.012, CAPTION_SPACE - 0.033, textwrap.fill(caption, 122), ha="left",
              va="top", fontsize=FS, color=vz.INK, linespacing=1.45)
-    out = p2.FIG_DIR / f"{spec['out']}.png"
+    out = p2.FIG_DIR / f"{spec['out'] if method == 'gev' else OUT_RANK[index]}.png"
     fig.savefig(out, dpi=300, facecolor="white")
     fig.savefig(out.with_suffix(".pdf"), facecolor="white")
     print(f"wrote {out}")

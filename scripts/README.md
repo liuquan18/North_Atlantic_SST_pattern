@@ -40,8 +40,12 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 `fig1_patterns_era5.py`, `fig1_patterns_simulations.py` … `fig7_event_composite.py`, one per figure. Figures 1–4 and 7 need
 `sst_pattern_correlation/01`; figure 1 also needs `european_heatwave/` (its top row), figure 5 needs `pre_process/06`, figure 6 needs `sst_pattern_correlation/02`.
 
-`fig1_patterns_era5.py`, `fig1_patterns_simulations.py`, `fig1_heatwave_analogues.py` and
-`fig8_hwd_vs_corr.py` take an optional `atl` / `med` argument: the same figure with r scored
+`fig1_sst_patterns.py` is the publication version of figure 1: SST patterns only, 2×2
+(ERA5 JJA 2026 and the best analogue of MPI-ESM1.2-ER, EPOC and MPI-GE), panel letters
+and no titles; it prints the caption lines for the panels.
+
+`fig1_patterns_era5.py`, `fig1_patterns_simulations.py`, `fig1_sst_patterns.py`,
+`fig1_heatwave_analogues.py` and `fig8_hwd_vs_corr.py` take an optional `atl` / `med` argument: the same figure with r scored
 over that half of the box only (output suffix `_atl` / `_med`).
 
 The 0.25° grid file, remap weights and cached regional remaps on scratch are

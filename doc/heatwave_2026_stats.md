@@ -297,6 +297,47 @@ centred on 1996–2001. This probably reflects the post-Pinatubo cooling and
 recovery in the forcing. The windows for 2003 and 2026 carry only 0.5 K and
 0.3 K.
 
+### 6. Ranking only, no fitted distribution (figs 20, 21)
+
+The same windows, without any distribution (`05_mpige_window_rank.py`):
+
+- k is the number of the 500 MPI-GE summers at or above the ERA5 value.
+- The ERA5 summer then ranks k + 1 among the 501 values, giving a return
+  period of 501 / (k + 1) years (Weibull plotting position).
+- The interval is the binomial (Clopper–Pearson) interval of k / 500.
+- Return levels are the window's 50th, 90th and 99th percentiles.
+
+| | rank-based | GEV (sections 4, 5) |
+|---|---|---|
+| 2026 heatwave days | 19 yr (14–31), k = 25 | 22 yr (17–31) |
+| 2003 heatwave days | 14 yr (10–20), k = 36 | 13 yr (10–16) |
+| 2026 TXx | 16 yr (12–24), k = 30 | 15 yr (12–21) |
+| 2003 TXx | 7.3 yr, k = 68 | 6.3 yr (5–8) |
+
+Within the record the two methods agree, and the ranking (2026 then 2003 for
+heatwave days; 2026 first for TXx) is unchanged. No ERA5 summer lies beyond
+the whole ensemble of its own window.
+
+Ranking cannot extrapolate. A value that no MPI-GE summer reaches only gets
+"≥ 501 yr". That is the case for the 2026 heatwave-day value in every window
+up to the late 1990s, and for the 2026 TXx in most windows from 1953 to 1997.
+The cross-climate numbers become:
+
+| | 1950s | 2003 | 2026 |
+|---|---|---|---|
+| 2003 heatwave days | 97 yr | 14 yr | 2.8 yr |
+| 2026 heatwave days | ≥ 501 yr | 125 yr | 19 yr |
+| 2003 TXx | 32 yr | 7.3 yr | 2.7 yr |
+| 2026 TXx | ≥ 407 yr | 72 yr | 16 yr |
+
+Out-of-sample test of the GEV: fitted to 25 members and checked on the other
+25, pooled over all 87 windows (43,500 summers). The GEV's 1-in-10/50/100
+levels are exceeded 9.8 / 2.2 / 1.2% of the time for TXx (nominal 10 / 2 / 1%)
+and 10.9 / 1.5 / 0.6% for heatwave days. The ensemble GEV is reliable for
+TXx. For heatwave days it overstates return periods beyond about 1-in-20
+years, so the long heatwave-day numbers in section 4 should be read as
+"hundreds of years" rather than at face value.
+
 ## Bottom line
 
 1. **2003** is the most robust "extreme for its time" summer in the record:
