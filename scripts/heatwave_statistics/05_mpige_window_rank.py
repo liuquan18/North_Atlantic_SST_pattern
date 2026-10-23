@@ -11,8 +11,9 @@ return periods: where each ERA5 summer sits, from small to large, among the
            `below + equal`, so ties widen the interval instead of hiding in it
   levels   the window's 50th / 90th / 99th percentiles (q50 / q90 / q99),
            exceeded by half, a tenth and a hundredth of its summers
-  fixed    the percentile rank of the 2003 and 2026 ERA5 values in every
-           window (the cross-climate curves of the figures)
+  fixed    the percentile rank of the 2003 and 2026 ERA5 values, and of every
+           summer ranked at or above MARK_PCT in its own window, in every window
+           (the cross-climate curves of the figures, which mark these years)
 
 Index: argument `hwd` (default) or `txx`, as for 03.
 Output: data/heatwave_stats/mpige_window_rank<suffix>.csv  one row per window
@@ -35,6 +36,8 @@ w03 = importlib.import_module("03_mpige_window_rp")
 DIR = ROOT / "data" / "heatwave_stats"
 QUANTILES = [50, 90, 99]
 FIXED_YEARS = [2003, 2026]
+#: summers ranked at or above this (%) in their own window get a fixed-value curve too
+MARK_PCT = 90
 
 
 def percentile_rank(sample, value, level=0.95):
@@ -55,19 +58,16 @@ def main(index="hwd"):
     t = pd.read_csv(DIR / table)
     mpige = t[t.dataset == "MPI-GE"]
     era5 = t[t.dataset == "ERA5"].sort_values("year").set_index("year")[col]
-    fixed_vals = {y: float(era5.loc[y]) for y in FIXED_YEARS}
-
-    win_rows, pct_rows = [], []
-    for year, xe in era5.items():
-        x = w03.window(mpige, year)[col].values
-        win_rows.append(dict(
-            year=year, n=len(x),
-            **{f"q{q}": float(np.percentile(x, q)) for q in QUANTILES},
-            **{f"pct_fixed_{y}": percentile_rank(x, v)["pct"] for y, v in fixed_vals.items()}))
-        pct_rows.append(dict(year=year, value=xe, **percentile_rank(x, xe)))
-
-    win = pd.DataFrame(win_rows)
-    pcts = pd.DataFrame(pct_rows)
+    samples = {year: w03.window(mpige, year)[col].values for year in era5.index}
+    pcts = pd.DataFrame([dict(year=year, value=xe, **percentile_rank(samples[year], xe))
+                         for year, xe in era5.items()])
+    fixed = sorted(set(FIXED_YEARS) | set(pcts.year[pcts.pct >= MARK_PCT]))
+    fixed_vals = {y: float(era5.loc[y]) for y in fixed}
+    win = pd.DataFrame([dict(
+        year=year, n=len(x),
+        **{f"q{q}": float(np.percentile(x, q)) for q in QUANTILES},
+        **{f"pct_fixed_{y}": percentile_rank(x, v)["pct"] for y, v in fixed_vals.items()})
+        for year, x in samples.items()])
     assert (win.n == 500).all(), "every window should hold 10 years x 50 members"
     win.to_csv(DIR / f"mpige_window_rank{suffix}.csv", index=False, float_format="%.5g")
     pcts.to_csv(DIR / f"era5_rank_in_mpige{suffix}.csv", index=False, float_format="%.5g")
@@ -76,7 +76,7 @@ def main(index="hwd"):
     for _, r in pcts.sort_values("pct", ascending=False).head(6).iterrows():
         print(f"  {int(r.year)}: {r.value:6.2f}  below {int(r.below):3d}  equal {int(r.equal):3d}"
               f"  {r.pct:5.1f}% ({r.pct_lo:.1f}-{r.pct_hi:.1f})")
-    for y in FIXED_YEARS:
+    for y in fixed:
         print(f"  {y} value in the windows of 1950s / 2003 / 2026: " + " / ".join(
             f"{win.loc[win.year.between(a, b), f'pct_fixed_{y}'].mean():.1f}%"
             for a, b in ((1950, 1959), (2003, 2003), (2026, 2026))))

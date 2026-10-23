@@ -56,6 +56,8 @@ BAND = vz.COLORS["MPI-GE"]
 #: (c): years at which the fixed-value curves are labelled; 1950s = mean RP of 1950-1959
 LABEL_AT = {"1950s": (1950, 1959), "2003": (2003, 2003), "2026": (2026, 2026)}
 FIXED_STYLE = {2026: (0, (4, 2)), 2003: (0, (1, 1.6))}
+#: rank figures: the further fixed-value curves (summers ranked >= 90%, e.g. 1947)
+OTHER_STYLE = (0, (5, 1.5, 1, 1.5))
 #: (c): backing of the labels drawn over curves
 WHITE = dict(facecolor="white", edgecolor="none", alpha=0.85, pad=0.6)
 #: (c): fixed-value curves are drawn no higher than this (years)
@@ -95,8 +97,9 @@ RANK_B = ("blue: {what}: the 50th, 90th and 99th percentiles of its 50 members i
           "hundredth of them; no fitted distribution. (b) Percentile rank of each observed ERA5 "
           "summer among those 500: the share of MPI-GE summers below it (ties counted half), "
           "with 95% binomial interval (grey); 100% is above all 500, the thin line at 50% the "
-          "MPI-GE median. Dashed / dotted: the same for a summer as large as 2026 / 2003 in every "
-          "year's window. ")
+          "MPI-GE median. Marked: 2003, 2026 and every summer ranked at or above 90%. Grey "
+          "lines: the percentile rank of a summer as large as each marked one in every year's "
+          "window (legend). ")
 CAPTION_HWD_RANK = (
     f"(a) ERA5 June–August heatwave days averaged over land in {hw.MEAN_BOX_LABEL} (black), as "
     "in Fig. 17; " + RANK_B.format(what="heatwave days of MPI-ESM1.2-LR") +
@@ -212,11 +215,11 @@ def panel_map(ax, gev, rp, values, spec, levels):
     ax.set_ylim(0 if lo >= 0 else padded(lo, hi)[0], hi + 0.12 * (hi - min(lo, 0)))
 
 
-def panel_series_levels(ax, win, years, raw, spec, levels):
+def panel_series_levels(ax, win, years, raw, spec, levels, marked):
     """(a) for method="rank": the observed ERA5 series on the MPI-GE window percentiles."""
     draw_levels(ax, win, levels)
     ax.plot(years, raw, color=OBS, lw=1.2, zorder=3)
-    for y in MARKED:
+    for y in marked:
         k = int(np.flatnonzero(years == y)[0])
         ax.plot(y, raw[k], "o", ms=3.5, color=OBS, mec="white", mew=0.6, zorder=4)
         label(ax, y, raw[k], str(y), fontweight="bold")
@@ -293,27 +296,31 @@ def panel_rp(bx, gev, rp, values, fixed, bound, spec, estimate):
               borderaxespad=0.2)
 
 
-def panel_pct(bx, win, rk, values, spec):
+def panel_pct(bx, win, rk, values, spec, marked):
     """(c) for method="rank": percentile rank of each ERA5 summer, 0-100% (linear)."""
     yr = win.year.values
     for ev in values:
         curve = win[f"pct_fixed_{ev}"].values
-        bx.plot(yr, curve, color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE[ev], zorder=2)
+        bx.plot(yr, curve, color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE.get(ev, OTHER_STYLE),
+                zorder=2)
         for name, (a, b) in LABEL_AT.items():
-            if name == str(ev):          # the event's own year: that is the main line's label
-                continue
             sel = (yr >= a) & (yr <= b)
             v, x = float(curve[sel].mean()), (a + b) / 2
+            # near the event's own year its bold label speaks for the curve; in the 1950s
+            # all curves crowd 100%, so only the 2003 and 2026 ones are labelled there
+            if abs(x - ev) < 10 or (name == "1950s" and ev not in FIXED_STYLE):
+                continue
             bx.plot(x, v, "o", ms=2.6, color=vz.INK_SOFT, zorder=3)
-            # both curves crowd 100%: the 2026 one is labelled above, the 2003 one below,
-            # and at 2003 the 2026 label steps left of the event's own bold label; at the
-            # right end the label goes beside the point, into the margin
+            # both curves crowd 100%: the 2026 one is labelled above, the 2003 one below;
+            # labels run rightwards, clear of the marked summers' bold labels (1947, 1994)
+            # to their left: at 2003 the 2026 label steps right of the event's own label,
+            # at the right end it goes beside the point, into the margin
             up = ev == 2026
             if name == "2026":
                 xy, ha, va = (5, 0), "left", "center"
             else:
-                xy = (-14 if name == "2003" else 0, 4 if up else -4)
-                ha = "right" if name == "2003" else "center"
+                xy = (16 if name == "2003" else -6, 4 if up else -4)
+                ha = "left"
                 va = "bottom" if up else "top"
             bx.annotate(f"{v:.1f}%" + (" (1950s)" if name == "1950s" else ""), (x, v),
                         xytext=xy, textcoords="offset points", ha=ha, va=va,
@@ -322,7 +329,7 @@ def panel_pct(bx, win, rk, values, spec):
     bx.fill_between(rk.year, rk.pct_lo, rk.pct_hi, color=OBS, alpha=0.15, lw=0, zorder=1)
     bx.plot(rk.year, rk.pct, color=OBS, lw=1.2, zorder=3)
     bx.scatter(rk.year, rk.pct, s=7, color=OBS, zorder=4, lw=0)
-    for y in MARKED:
+    for y in marked:
         r = rk[rk.year == y].iloc[0]
         label(bx, y, r.pct, f"{y}\n{r.pct:.1f}%", dy=4, fontweight="bold", linespacing=1.1,
               bbox=WHITE)
@@ -335,12 +342,10 @@ def panel_pct(bx, win, rk, values, spec):
     handles = [
         plt.Line2D([], [], color=OBS, lw=1.2, marker="o", ms=2.5, label="ERA5 summer"),
         plt.Rectangle((0, 0), 1, 1, color=OBS, alpha=0.15, lw=0, label="95% interval"),
-        plt.Line2D([], [], color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE[2026],
-                   label=f"2026-like summer ({spec['fmt'](values[2026])})"),
-        plt.Line2D([], [], color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE[2003],
-                   label=f"2003-like summer ({spec['fmt'](values[2003])})"),
-    ]
-    bx.legend(handles=handles, loc="upper right", bbox_to_anchor=(1.0, 1.02), ncol=4,
+    ] + [plt.Line2D([], [], color=vz.INK_SOFT, lw=0.9, ls=FIXED_STYLE.get(ev, OTHER_STYLE),
+                    label=f"{ev}-like summer ({spec['fmt'](values[ev])})")
+         for ev in sorted(values, reverse=True)]
+    bx.legend(handles=handles, loc="upper right", bbox_to_anchor=(1.0, 1.02), ncol=3,
               frameon=False, fontsize=FS - 0.5, handlelength=2.2, columnspacing=1.2,
               borderaxespad=0.2)
 
@@ -374,8 +379,11 @@ def main(index="hwd", method="gev"):
         fig, axes = plt.subplots(2, 1, figsize=(FIG_SIZE[0], height), sharex=True,
                                  gridspec_kw=dict(height_ratios=[1.15, 1.25], hspace=0.14))
         ax, bx = axes
-        panel_series_levels(ax, gev, years, raw, spec, meth["levels"])
-        panel_pct(bx, gev, rp, values, spec)
+        # 05 writes a fixed-value curve for 2003, 2026 and every summer ranked >= 90%
+        marked = sorted(int(c.rsplit("_", 1)[1]) for c in gev if c.startswith("pct_fixed_"))
+        values = {y: float(rp.loc[rp.year == y, "value"].iloc[0]) for y in marked}
+        panel_series_levels(ax, gev, years, raw, spec, meth["levels"], marked)
+        panel_pct(bx, gev, rp, values, spec, marked)
     fig.patch.set_facecolor("white")
     fig.subplots_adjust(left=0.085, right=0.9, top=0.98, bottom=caption_space + 0.055 * scale)
     for a, letter in zip(axes, "abc"):
