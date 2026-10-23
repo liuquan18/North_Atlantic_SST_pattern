@@ -92,9 +92,10 @@ CAPTION_TXX = (
     "TXx as high as 2026 / 2003 in the MPI-GE climate of every year; drawn at 10,000 years where "
     "the fit gives more or puts the value above its upper bound. MPI-GE TXx varies about 1.1 "
     "times as much as ERA5's and warms more slowly than observed after about 2015.")
-RANK_B = ("blue: {what}: the 50th, 90th and 99th percentiles of its 50 members in the 10 years "
-          "around each year (y−5 to y+4, 500 summers), exceeded by half, a tenth and a "
-          "hundredth of them; no fitted distribution. (b) Percentile rank of each observed ERA5 "
+RANK_B = ("blue: {what}: the 50th, 90th and 99th percentiles (solid) and the mean (dashed) of "
+          "its 50 members in the 10 years around each year (y−5 to y+4, 500 summers); the "
+          "percentiles are exceeded by half, a tenth and a hundredth of them, no fitted "
+          "distribution. (b) Percentile rank of each observed ERA5 "
           "summer among those 500: the share of MPI-GE summers below it (ties counted half), "
           "with 95% binomial interval (grey); 100% is above all 500, the thin line at 50% the "
           "MPI-GE median. Marked: 2003, 2026 and every summer ranked at or above 90%. Grey "
@@ -189,16 +190,25 @@ def panel_series(ax, years, raw, anom, spec):
               handlelength=1.6, ncol=2)
 
 
-def draw_levels(ax, gev, levels):
-    """The window's three levels as shaded blue bands, labelled at the right end."""
+def draw_levels(ax, gev, levels, styles=("-", "-", (0, (3, 1.5))), extra=()):
+    """
+    The window's three levels as shaded blue bands, plus any `extra` (column,
+    name, linestyle) lines, labelled at the right end; labels that would touch
+    are pushed apart upwards.
+    """
     yr = gev.year.values
     (c1, _), (c2, _), (c3, _) = levels
     ax.fill_between(yr, gev[c1], gev[c2], color=BAND, alpha=0.30, lw=0, zorder=1)
     ax.fill_between(yr, gev[c2], gev[c3], color=BAND, alpha=0.13, lw=0, zorder=1)
-    for (col, name), ls in zip(levels, ("-", "-", (0, (3, 1.5)))):
+    lines = [(col, name, ls) for (col, name), ls in zip(levels, styles)] + list(extra)
+    for col, _, ls in lines:
         ax.plot(yr, gev[col], color=BAND, lw=0.8, ls=ls, zorder=2)
-        ax.text(yr[-1] + 1.2, gev[col].iloc[-1], name, va="center", fontsize=FS - 0.5,
-                color=BAND)
+    gap = 0.09 * (gev[c3].max() - gev[c1].min())
+    ends = sorted((float(gev[col].iloc[-1]), name) for col, name, _ in lines)
+    y_prev = -np.inf
+    for y, name in ends:
+        y_prev = max(y, y_prev + gap)
+        ax.text(yr[-1] + 1.2, y_prev, name, va="center", fontsize=FS - 0.5, color=BAND)
 
 
 def panel_map(ax, gev, rp, values, spec, levels):
@@ -217,7 +227,7 @@ def panel_map(ax, gev, rp, values, spec, levels):
 
 def panel_series_levels(ax, win, years, raw, spec, levels, marked):
     """(a) for method="rank": the observed ERA5 series on the MPI-GE window percentiles."""
-    draw_levels(ax, win, levels)
+    draw_levels(ax, win, levels, styles=("-", "-", "-"), extra=(("mean", "mean", "--"),))
     ax.plot(years, raw, color=OBS, lw=1.2, zorder=3)
     for y in marked:
         k = int(np.flatnonzero(years == y)[0])
@@ -229,9 +239,10 @@ def panel_series_levels(ax, win, years, raw, spec, levels, marked):
     handles = [
         plt.Line2D([], [], color=OBS, lw=1.2, label="ERA5"),
         plt.Rectangle((0, 0), 1, 1, color=BAND, alpha=0.3, lw=0, label="MPI-GE percentiles"),
+        plt.Line2D([], [], color=BAND, lw=0.8, ls="--", label="MPI-GE mean"),
     ]
     ax.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.05, 1.03), frameon=False,
-              fontsize=FS, handlelength=1.6, ncol=2)
+              fontsize=FS, handlelength=1.6, ncol=3)
 
 
 def fixed_curves(win, values):

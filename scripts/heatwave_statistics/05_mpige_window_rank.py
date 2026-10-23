@@ -10,7 +10,8 @@ return periods: where each ERA5 summer sits, from small to large, among the
   95% CI   Clopper-Pearson: lower bound from `below`, upper from
            `below + equal`, so ties widen the interval instead of hiding in it
   levels   the window's 50th / 90th / 99th percentiles (q50 / q90 / q99),
-           exceeded by half, a tenth and a hundredth of its summers
+           exceeded by half, a tenth and a hundredth of its summers, and
+           its mean (`mean`, over the same 500 summers)
   fixed    the percentile rank of the 2003 and 2026 ERA5 values, and of every
            summer ranked at or above MARK_PCT in its own window, in every window
            (the cross-climate curves of the figures, which mark these years)
@@ -64,7 +65,7 @@ def main(index="hwd"):
     fixed = sorted(set(FIXED_YEARS) | set(pcts.year[pcts.pct >= MARK_PCT]))
     fixed_vals = {y: float(era5.loc[y]) for y in fixed}
     win = pd.DataFrame([dict(
-        year=year, n=len(x),
+        year=year, n=len(x), mean=float(np.mean(x)),
         **{f"q{q}": float(np.percentile(x, q)) for q in QUANTILES},
         **{f"pct_fixed_{y}": percentile_rank(x, v)["pct"] for y, v in fixed_vals.items()})
         for year, x in samples.items()])
