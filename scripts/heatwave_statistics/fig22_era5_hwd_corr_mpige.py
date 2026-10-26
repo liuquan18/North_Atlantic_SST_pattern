@@ -9,10 +9,9 @@ the MPI-GE summers of its climate (no fitted distribution).
     correlation of each summer with ERA5 JJA 2026 (data/sst_pattern_corr,
     full box), ERA5 in black, the MPI-GE window percentiles and mean in blue.
     2026 itself is drawn too, at r = 1 by construction.
-(c) the same for the box-difference index MED − NAL: Mediterranean (30–45°N,
-    0–20°E) minus North Atlantic (40–50°N, 60–20°W) JJA SST anomaly
-    (data/sst_pattern_corr/box_difference.nc, 03_box_difference.py), a
-    resolution-tolerant measure of how 2026-like a summer is.
+
+The box-difference index MED − NAL, formerly panel (c), and its two box means
+are in fig22_boxdiff_mpige.py.
 
 Marked: the summers marked in fig 20 (2003, 2026 and every summer ranked at
 or above 90% in heatwave days).
@@ -51,7 +50,6 @@ OUT = p2.FIG_DIR / "fig22_era5_hwd_corr_mpige.png"
 #: under the last row for its tick labels, and the caption's title + one line
 ROW_IN, BOTTOM_IN, CAPTION_HEAD_IN, LINE_IN = 2.23, 0.42, 0.25, 0.115
 CAPTION_WIDTH = 122
-DIPOLE_YLABEL = f"{p2.DIPOLE_LABEL} SST anomaly (°C)"
 CAPTION_TITLE = "Heatwave days and the SST pattern of each observed summer against the simulated summers of its climate"
 CAPTION = (
     f"(a) ERA5 June–August heatwave days averaged over land in {hw.MEAN_BOX_LABEL} (black), as in "
@@ -61,14 +59,11 @@ CAPTION = (
     "anomaly with that of ERA5 JJA 2026 over 20–60°N, 80°W–40°E (area-weighted box mean "
     "removed, anomalies against 1991–2020 of the same dataset); ERA5 in black, 2026 at r = 1 "
     "by construction. "
-    f"(c) The same for the box-difference index {p2.DIPOLE_LABEL}: JJA SST anomaly averaged over "
-    f"the Mediterranean ({p2.DIPOLE_BOXES['med']['detail']}) minus that over the North "
-    f"Atlantic ({p2.DIPOLE_BOXES['nal']['detail']}), ocean cells on the common 1° grid. "
     "Marked: 2003, 2026 and every summer ranked at or above 90% of its window in heatwave days. "
     f"Right: the same quantities in ERA5, {BOX_YEARS[0]}–{p2.REF_YEAR}, and in the "
     "higher-resolution runs, all "
     f"historical + scenario summers {BOX_YEARS[0]}–{BOX_YEARS[1]} where available, pooled over "
-    "members, keeping the summers that have all three quantities (ICON-EPOC: 1 run, "
+    "members, keeping the summers that have both quantities (ICON-EPOC: 1 run, "
     "1991–2025; ICON-EERIE: 3, r1 1991–2030, r2 to 2014, r3 to 2020; "
     "MPI-ESM1.2-ER: 3, 1991–2030; "
     "sample size in brackets; box 25th–75th percentile, line median, whiskers 5th–95th "
@@ -99,28 +94,34 @@ def _by_member_year(da):
     return da.to_series()
 
 
-def box_samples():
+def box_samples(sst, hwd=True):
     """
-    Heatwave days, pattern correlations and MED − NAL index of each BOX_KEYS
-    dataset, BOX_YEARS, members pooled. Only the (member, year) summers that
-    have all three are kept, so every row's box of a dataset holds the same
-    summers (EERIE r2 has heatwave days to 2020 but SST only to 2014); a dataset
-    without heatwave days (MPI-ER) keeps the summers that have both SST values.
+    Heatwave days (if `hwd`) and the SST quantities `sst`, a list of (file,
+    variable suffix), e.g. (p2.dipole_file(), "|med") for the variables
+    '<dataset>|med', of each BOX_KEYS dataset, BOX_YEARS, members pooled. Only
+    the (member, year) summers that have all of them are kept, so every row's
+    box of a dataset holds the same summers (EERIE r2 has heatwave days to 2020
+    but SST only to 2014); a dataset without heatwave days (MPI-ER) keeps the
+    summers that have the SST values. One {key: values} per quantity, heatwave
+    days first.
     """
     a, b = BOX_YEARS
     t = pd.read_csv(fig18.DIR / "season_table.csv")
     t = t[t.year.between(a, b)]
-    with xr.open_dataset(p2.corr_file(p2.PLOT_VARIANTS[0])) as cr, \
-            xr.open_dataset(p2.dipole_file()) as cd:
-        tables = {k: pd.DataFrame({
-            "hwd": t[t.dataset == k].set_index(["member", "year"]).hwd,
-            "r": _by_member_year(cr[k].sel(year=slice(a, b))),
-            "d": _by_member_year(cd[k].sel(year=slice(a, b))),
-        }) for k in BOX_KEYS}
+    cols = []
+    for path, suffix in sst:
+        with xr.open_dataset(path) as ds:
+            cols.append({k: _by_member_year(ds[k + suffix].sel(year=slice(a, b)).load())
+                         for k in BOX_KEYS})
+    tables = {k: pd.DataFrame({
+        **({"hwd": t[t.dataset == k].set_index(["member", "year"]).hwd} if hwd else {}),
+        **{i: c[k] for i, c in enumerate(cols)},
+    }) for k in BOX_KEYS}
     for k, x in tables.items():
-        need = ["r", "d"] if x.hwd.isna().all() else ["hwd", "r", "d"]
+        need = list(range(len(cols))) if not hwd or x.hwd.isna().all() else list(x.columns)
         tables[k] = x.dropna(subset=need)
-    return [{k: x[c].dropna().values for k, x in tables.items()} for c in ("hwd", "r", "d")]
+    return [{k: x[c].dropna().values for k, x in tables.items()}
+            for c in next(iter(tables.values())).columns]
 
 
 def panel_boxes(cx, samples, names=True):
@@ -147,14 +148,12 @@ def panel_boxes(cx, samples, names=True):
     cx.spines["left"].set_visible(False)
 
 
-def figure(win_hwd, years, hwd, r, marked, name, title, caption, out, boxes=None,
-           dipole=None):
+def figure(win_hwd, years, hwd, r, marked, name, title, caption, out, boxes=None):
     """
     The panels for one dataset `name`: its heatwave days `hwd` (`years`) on the
-    MPI-GE windows `win_hwd`, its pattern correlation `r` (DataArray over year)
-    on the same windows of the MPI-GE correlations and, if given, its MED − NAL
-    index `dipole` (DataArray over year) on those of the MPI-GE index. `boxes`,
-    from box_samples(), adds the column of box plots on the right.
+    MPI-GE windows `win_hwd` and its pattern correlation `r` (DataArray over
+    year) on the same windows of the MPI-GE correlations. `boxes`, from
+    box_samples(), adds the column of box plots on the right.
     """
     vz.use_style()
     spec, meth = fig18.SPECS["hwd"], fig18.METHODS["rank"]
@@ -163,10 +162,6 @@ def figure(win_hwd, years, hwd, r, marked, name, title, caption, out, boxes=None
     with xr.open_dataset(p2.corr_file(p2.PLOT_VARIANTS[0])) as ds:
         sst.append((r, window_levels(ds["MPI-GE"].load(), win_hwd.year.values),
                     "Pattern correlation with JJA 2026"))
-    if dipole is not None:
-        with xr.open_dataset(p2.dipole_file()) as ds:
-            sst.append((dipole, window_levels(ds["MPI-GE"].load(), win_hwd.year.values),
-                        DIPOLE_YLABEL))
     n = 1 + len(sst)
 
     text = textwrap.fill(caption, CAPTION_WIDTH)
@@ -233,11 +228,8 @@ def main():
     with xr.open_dataset(p2.corr_file(p2.PLOT_VARIANTS[0])) as ds:
         era5_r = ds["ERA5"].load()
     era5_r = era5_r.sel(year=slice(int(years[0]), p2.REF_YEAR)).dropna("year")
-    with xr.open_dataset(p2.dipole_file()) as ds:
-        era5_d = ds["ERA5"].load()
-    era5_d = era5_d.sel(year=slice(int(years[0]), p2.REF_YEAR)).dropna("year")
     figure(win_hwd, years, raw, era5_r, marked, "ERA5", CAPTION_TITLE, CAPTION, OUT,
-           boxes=box_samples(), dipole=era5_d)
+           boxes=box_samples([(p2.corr_file(p2.PLOT_VARIANTS[0]), "")]))
 
 
 if __name__ == "__main__":
