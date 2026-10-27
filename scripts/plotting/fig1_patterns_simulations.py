@@ -45,6 +45,8 @@ VMAX_CAP = 2.0
 #: (dataset, which season): "ref" = JJA 2026 itself, "best" = best analogue
 COLUMNS = [("MPI-GE", "best"), ("MPI-ER", "best"), ("ICON-EPOC-hist", "best"), ("EERIE", "best")]
 HWD_LEVELS = np.arange(0, 46, 5)
+#: contour interval of a column's optional "zg" field (gpm); no zero line
+ZG_STEP = 20
 
 
 def season(key, which, best):
@@ -109,7 +111,7 @@ HW_NOTE = f"top-row value: land-mean heatwave days in the dashed box, {hw.MEAN_B
 
 
 def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
-                sst_region_label=None, sst_box=None):
+                sst_region_label=None, sst_box=None, zg_level=500):
     """
     Heatwave days (top) over SST pattern (bottom), one column per season.
 
@@ -117,7 +119,9 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
     land-mean heatwave days) and "r_tag" for the SST panel (default: r); `lat_line` draws a dashed parallel on the
     heatwave maps, e.g. to mark a sub-region the tag refers to. `sst_box` outlines
     the part of the SST map that r was scored over, and `sst_region_label`
-    names it in the caption (default: the whole analysis box).
+    names it in the caption (default: the whole analysis box). A column's
+    optional "zg" field, geopotential height (gpm) at `zg_level` hPa, is
+    contoured over its SST map.
     """
     sst_region_label = sst_region_label or p2.REGION_LABEL
     vz.use_style()
@@ -141,7 +145,8 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
     # head room for the column titles: ~0.18 in per title line beyond the first
     title_h = 0.18 * max(c["title"].count("\n") for c in cols)
     # ...and for caption lines beyond the default two (one is in hw_note's place)
-    caption_h = 0.17 * hw_note.count("\n")
+    has_zg = any(c.get("zg") is not None for c in cols)
+    caption_h = 0.17 * (hw_note.count("\n") + has_zg)
     top_h = 1.39 + title_h + caption_h
     fig_h = h_top + h_bot + top_h + 0.65
 
@@ -178,12 +183,21 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
         ax = fig.add_subplot(gs[1, j], projection=vz.map_projection())
         im_sst = vz.draw_map(ax, c["sst"], sst_levels, sst_cmap,
                              labels_bottom=True, labels_left=(j == 0))
+        if c.get("zg") is not None:
+            z = c["zg"]
+            top = ZG_STEP * np.ceil(float(np.abs(z).max()) / ZG_STEP)
+            levels = [v for v in np.arange(-top, top + 1, ZG_STEP) if v != 0]
+            cs = ax.contour(z.lon, z.lat, z.values, levels=levels, colors=vz.INK,
+                            linewidths=1.1, linestyles=["--" if v < 0 else "-" for v in levels],
+                            transform=ccrs.PlateCarree(), zorder=5)
+            ax.clabel(cs, fmt="%d", fontsize=6, inline_spacing=2)
         if sst_box is not None:
             vz.draw_box(ax, sst_box, lw=1.1)
         if c["r"] is not None:
             vz.panel_tag(ax, c.get("r_tag") or f"r = {c['r']:+.2f}", loc="upper right")
 
-    for i, label in enumerate(["JJA heatwave days", "JJA SST pattern"]):
+    for i, label in enumerate(["JJA heatwave days",
+                               "JJA SST pattern" + (f" + Z{zg_level}" if has_zg else "")]):
         fig.text(0.012, gs[i, 0].get_position(fig).y0 + gs[i, 0].get_position(fig).height / 2,
                  label, rotation=90, va="center", ha="center", fontsize=9.5, color=vz.INK)
 
@@ -201,7 +215,9 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
              "(15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
              f"{hw_note}\n"
              f"SST: {p2.VARIANTS[VARIANT]['long']}, {p2.REGION_LABEL}; r = pattern correlation with ERA5 JJA 2026 over {sst_region_label}  ·  "
-             "both against 1991–2020 of the same dataset",
+             "both against 1991–2020 of the same dataset"
+             + (f"\ncontours: JJA {zg_level} hPa geopotential height anomaly, box mean removed as for the SST, "
+                f"every {ZG_STEP} gpm, negative dashed, zero omitted" if has_zg else ""),
              ha="center", va="top", fontsize=8.3, color=vz.INK_SOFT, linespacing=1.4)
 
     fig.savefig(out)

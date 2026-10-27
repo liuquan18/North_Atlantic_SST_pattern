@@ -27,6 +27,7 @@ Needs `data/heatwave/` (from `european_heatwave/`, ERA5 from 1940) and
 | `fig22_boxdiff_mpige.py` | (a) the box-difference index MED − NAL (`box_difference.nc`, from `sst_pattern_correlation/03`; fig 22's former panel c) on the MPI-GE window percentiles and mean; (b) the Mediterranean and (c) the North Atlantic box mean alone, on one y axis, where the warming that cancels in (a) shows; right column as fig 22 |
 | `fig23_epoc_hwd_corr_mpige.py` | as fig 22 (a, b), 1991–2030, with one line per higher-resolution run in place of ERA5: ICON-EPOC, ICON-EERIE r1–r3, MPI-ER r2–r3 (heatwave days once `08_mpi_er_tmax.sh` has filled the season table); MPI-GE windows computed from `season_table.csv`; no marked summers |
 | `fig23_boxdiff_mpige.py` | as `fig22_boxdiff_mpige.py` with the same runs as fig 23: MED − NAL, Mediterranean and North Atlantic box means, 1991–2030 |
+| `fig24_med_nal_correlation.py` | co-variability of the MED and NAL JJA SST box means, 1991–2030 (ERA5 also 1940–2026), linearly detrended: (a) correlation, (b) standard deviations, (c) var(MED − NAL) = σ²_MED + σ²_NAL − 2 cov; bars for ERA5 and the fig 23 runs, MPI-GE members as box plots / member means |
 | `run_statistics.sh` | all of the above; `sbatch run_statistics.sh` (~35 min on one node; the two 03 runs take most of it) |
 
 `HWS_N_BOOT=20 python3 02_statistics.py` gives a quick test run.

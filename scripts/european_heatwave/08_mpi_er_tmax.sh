@@ -23,8 +23,9 @@
 # time shift. (The 201 in the monthly `echam` stream is NOT the monthly max of
 # these.) The .sz files are szip-compressed GRIB; cdo 2.5 reads them.
 #
-# Per year: stage (requested for all years up front, so the tape library can
-# order the reads), download, extract the Apr-Oct g3bid files, select 201,
+# Per year: stage (requested for the whole year range up front, so the tape
+# library can order the reads; run the full 1950-2099 in ~25-year chunks so the
+# archive's disk cache is not flooded), download, extract the Apr-Oct g3bid files, select 201,
 # bilinear onto GRID_EU025, then delete the tar. Download ran at ~360 MB/s
 # (60 GB in under 3 min); scratch peak is ~60 GB per concurrent year.
 #
@@ -59,8 +60,16 @@ tar_path() {
     esac
 }
 
+# Every atlas call refreshes the hourly access token in ~/.config/acli/session.json
+# when it is due; concurrent refreshes could race on that file, so a quick
+# `atlas status` under a lock does the refresh first.
+acli() {
+    flock "${ATLAS_LOCK}" atlas status >/dev/null 2>&1 || true
+    atlas "$@"
+}
+
 is_online() {
-    atlas ls --format json "$1" 2>/dev/null | grep -q '"flags": ".o'
+    acli ls --format json "$1" 2>/dev/null | grep -q '"flags": ".o'
 }
 
 one_year() {
@@ -69,31 +78,40 @@ one_year() {
     [ -s "$out" ] && return 0
     src=$(tar_path "$m" "$y")
     [ -n "$src" ] || { echo "  r${m} ${y}: no daily output archived"; return 0; }
-    until is_online "$src"; do sleep 60; done
+    # re-request the stage every 30 min in case the bulk request lost this tar
+    n=0
+    until is_online "$src"; do
+        n=$((n + 1)); [ $((n % 30)) -eq 0 ] && acli stage "$src" >/dev/null 2>&1
+        sleep 60
+    done
 
     dir="${tape}/r${m}_${y}"
     rm -rf "$dir"; mkdir -p "$dir"
     # the progress bar goes to stderr: keep it out of the SLURM log unless the download fails
-    atlas download "$src" "${dir}/atm.tar" >"${dir}/download.log" 2>&1 \
-        || { tail -5 "${dir}/download.log" | tr '\r' '\n' | tail -5; return 1; }
-    prefix=$(basename "$src" | sed -E 's/_atm_[0-9]{4}\.tar$//')
+    acli download "$src" "${dir}/atm.tar" >"${dir}/download.log" 2>&1 \
+        || { echo "!! r${m} ${y}: download failed"; tail -c 2000 "${dir}/download.log" | tr '\r' '\n' | tail -3; return 1; }
+    # by wildcard: the run prefix inside the tar need not match the tar's name
     m0=${months%/*}; m1=${months#*/}
-    members=$(for mm in $(seq "$m0" "$m1"); do
-        printf '%s_echam6_g3bid_%d%02d.sz ' "$prefix" "$y" "$mm"; done)
-    tar -xf "${dir}/atm.tar" -C "$dir" $members
+    tar -xf "${dir}/atm.tar" -C "$dir" --wildcards \
+        $(for mm in $(seq "$m0" "$m1"); do printf '*_echam6_g3bid_%d%02d.sz ' "$y" "$mm"; done)
     rm -f "${dir}/atm.tar"
+    files=$(ls "${dir}"/*_echam6_g3bid_${y}??.sz)
+    [ "$(echo "$files" | wc -l)" -eq $((m1 - m0 + 1)) ] \
+        || { echo "!! r${m} ${y}: expected $((m1 - m0 + 1)) g3bid files, got: $files"; return 1; }
 
     cdo -s -O -f nc4 -z zip_1 -setname,tmax -setunit,degC -subc,273.15 \
         -remapbil,"$grid" -mergetime \
-        $(for f in $members; do echo "-selcode,201 ${dir}/${f}"; done) "${out}.tmp"
+        $(for f in $files; do echo "-selcode,201 $f"; done) "${out}.tmp"
+    nt=$(cdo -s ntime "${out}.tmp")
+    [ "$nt" -eq 214 ] || { echo "!! r${m} ${y}: ${nt} days, expected 214"; return 1; }
     mv "${out}.tmp" "$out"
     rm -rf "$dir"
-    echo "  r${m} ${y}: $(cdo -s ntime "$out") days"
+    echo "  r${m} ${y}: ${nt} days  $(date +%H:%M)"
 }
-export -f tar_path is_online one_year
-export LTA
+export -f tar_path acli is_online one_year
+export LTA ATLAS_LOCK=${WORK}/.atlas.lock
 
-# stage every tar still needed in one request
+# stage every tar of this year range still needed, in one request
 todo=()
 for m in $MEMBERS; do
     for y in $(seq "$FIRST_YEAR" "$LAST_YEAR"); do
@@ -102,10 +120,11 @@ for m in $MEMBERS; do
     done
 done
 if [ ${#todo[@]} -gt 0 ]; then
-    echo "staging ${#todo[@]} tars"
-    atlas stage "${todo[@]}"
+    echo "staging ${#todo[@]} tars  $(date +%H:%M)"
+    acli stage "${todo[@]}"
 fi
 
-parallel -j ${MPIER_JOBS:-4} one_year {1} {2} "$WORK" "$TAPE" "$GRID_EU025" "$HW_MONTHS" \
-    ::: $MEMBERS ::: $(seq "$FIRST_YEAR" "$LAST_YEAR")
+# years outer, members inner: both members of a year are fetched together
+parallel -j ${MPIER_JOBS:-4} one_year {2} {1} "$WORK" "$TAPE" "$GRID_EU025" "$HW_MONTHS" \
+    ::: $(seq "$FIRST_YEAR" "$LAST_YEAR") ::: $MEMBERS
 echo "=== done ==="
