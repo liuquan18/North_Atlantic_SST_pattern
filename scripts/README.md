@@ -10,6 +10,7 @@ scripts/
 ├── european_heatwave/ daily Tmax -> JJA heatwave metrics -> data/heatwave/ (see its README)
 ├── pre_process/       cdo stages, submitted with sbatch; raw model/obs data -> data/sst_anomaly/
 ├── sst_pattern_correlation/  pattern correlation and region means -> data/sst_pattern_corr/
+├── circulation/   summer NAO / EA from EOFs of JJA SLP -> data/circulation/
 └── plotting/          one script per figure -> figures/pattern_2026/
 ```
 
@@ -28,6 +29,7 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 | `05_mpi_er.sh` | MPI-ESM1.2-ER, 3 realizations (calls `stack_mpi_er.py`) |
 | `06_kmscale_zoom.sh` | native-resolution zoom fields for figure 5 (needs 01 and 03) |
 | `10_model_zg.sh` | JJA Z300 anomalies of MPI-GE, ICON-EPOC, EERIE r1 and MPI-ER r2, 1991–2030, on the ERA5 Z300 1° grid (needs `ZLEVEL=300 09_era5_zg.sh`; `stack_zg.py`), for fig 25 |
+| `11_slp.sh` | JJA mean SLP of ERA5 (1940–2026) and the 50 MPI-GE members (1935–2030), 2.5°, 20–80°N 90°W–40°E → `data/circulation/` (`stack_slp.py`), for `circulation/` |
 
 ## sst_pattern_correlation/
 
@@ -36,6 +38,14 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 | `01_pattern_corr.py` | correlations (whole box and Atlantic / Mediterranean halves), best analogues, bootstrap → `sst_pattern_corr/` |
 | `02_region_means.py` | area-mean JJA anomalies per region → `sst_pattern_corr/region_means.nc` |
 | `03_box_difference.py` | box-difference index MED − NAL (30–45°N 0–20°E minus 40–50°N 60–20°W) → `sst_pattern_corr/box_difference.nc` |
+
+## circulation/
+
+| script | output |
+|---|---|
+| `01_nao_ea_eof.py` | EOFs of JJA SLP (ERA5 linearly detrended; MPI-GE ensemble mean removed, members pooled), 1940–2026: NAO = EOF1, EA = EOF2, standardised PCs, regression patterns, sign fixed by a box per mode → `data/circulation/nao_ea.nc` |
+| `fig26_nao_ea_patterns.py` | NAO and EA patterns of ERA5 and MPI-GE, with the method box |
+| `fig27_nao_ea_index_mpige.py` | as fig 22: ERA5 NAO and EA indices on the 1st–99th percentiles of the MPI-GE window, with the method box |
 
 ## plotting/
 
