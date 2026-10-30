@@ -13,7 +13,10 @@ fig 22/23), over YEARS (1991-2030). Two indices, one figure each (argument
   boxdiff  the box-difference index MED - NAL
            (data/sst_pattern_corr/box_difference.nc; fig23_boxdiff_mpige.py)
 
-Panel (a) is the composite of the MPI-GE summers so selected (~10% of its
+Panel (a) is the composite of the three observed ERA5 heatwave summers of
+fig 1 (ERA5_EVENTS: 1947, 2003, 2026, the summers at or above 90% of their
+MPI-GE window in heatwave days), in both figures; its r includes 2026 itself.
+Panel (b) is the composite of the MPI-GE summers so selected (~10% of its
 2000), the others one composite per run of fig 23's RUNS, over that run's
 selected summers. Shading: JJA SST anomaly with its area-weighted box mean
 removed (the pattern of fig 1), averaged over the summers; contours: JJA 300
@@ -35,9 +38,11 @@ import pandas as pd
 import xarray as xr
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "plotting"))
 fig18 = importlib.import_module("fig18_era5_return_period_mpige")
 fig22 = importlib.import_module("fig22_era5_hwd_corr_mpige")
 fig23 = importlib.import_module("fig23_epoc_hwd_corr_mpige")
+fig1_era5 = importlib.import_module("fig1_patterns_era5")
 import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
@@ -50,6 +55,8 @@ ZLEVEL = 300
 ZG_STEP = 10
 VMAX_CAP = 1.5
 NCOL = 2
+#: the observed heatwave summers of fig 1 (ERA5), composited in panel (a)
+ERA5_EVENTS = sorted(fig1_era5.YEARS)
 #: SST and Z300 anomaly file stem of each dataset
 ZG_STEM = {"MPI-GE": "mpige", "ICON-EPOC-hist": "epoc2_020",
            "EERIE": "eerie_hist_ssp245", "MPI-ER": "mpier"}
@@ -100,6 +107,8 @@ def zg_pattern(key, member, years):
     analysis box (as fig1_patterns_era5.zg_field), or None without upper-air
     output for that member and those years.
     """
+    if key == "ERA5":
+        return xr.concat([fig1_era5.zg_field(y, ZLEVEL) for y in years], "year")
     f = p2.DATA_DIR / f"{ZG_STEM[key]}_jja_z{ZLEVEL}_anom_1deg.nc"
     if not f.exists():
         return None
@@ -116,41 +125,81 @@ def zg_pattern(key, member, years):
 
 
 def composites(sel):
-    """One panel dict per run, MPI-GE first; MPI-GE pools all its members."""
+    """
+    One panel dict per dataset: the ERA5 events first, then MPI-GE, then each
+    model of RUNS; every model's realisations are pooled into one composite.
+    `parts` holds each member's selected years. The Z300 composite is taken
+    over the summers that have upper-air output (`zg_members`, `zg_n`), which
+    for EERIE and MPI-ER is a subset of the SST composite's.
+    """
     ref = sst_pattern("ERA5", None, [p2.REF_YEAR]).squeeze("year")
+    runs = [("ERA5", [(None, ERA5_EVENTS)]),
+            ("MPI-GE", [(m, ys) for key, m, ys in sel if key == "MPI-GE"])]
+    runs += [(key, [(m, ys) for k, m, ys in sel if k == key])
+             for key in fig23.RUNS if any(k == key for k, _, _ in sel)]
     panels = []
-    ge = [(m, ys) for key, m, ys in sel if key == "MPI-GE" and ys]
-    runs = [("MPI-GE", None, ge)] + [(key, m, [(m, ys)] if ys else [])
-                                    for key, m, ys in sel if key != "MPI-GE"]
-    for key, m, parts in runs:
-        n = sum(len(ys) for _, ys in parts)
-        p = dict(key=key, member=m, n=n, years=[y for _, ys in parts for y in ys])
-        if n:
-            ssts = [sst_pattern(key, mm, ys) for mm, ys in parts]
-            zgs = [zg_pattern(key, mm, ys) for mm, ys in parts]
-            p["sst"] = xr.concat(ssts, "year").mean("year")
-            p["zg"] = None if any(z is None for z in zgs) else xr.concat(zgs, "year").mean("year")
+    for key, parts in runs:
+        hit = [(m, ys) for m, ys in parts if ys]
+        p = dict(key=key, parts=parts, n=sum(len(ys) for _, ys in hit))
+        if p["n"]:
+            p["sst"] = xr.concat([sst_pattern(key, m, ys) for m, ys in hit], "year").mean("year")
+            zgs = [(m, zg_pattern(key, m, ys)) for m, ys in hit]
+            zgs = [(m, z) for m, z in zgs if z is not None]
+            p["zg"] = xr.concat([z for _, z in zgs], "year").mean("year") if zgs else None
+            p["zg_members"] = [m for m, _ in zgs]
+            p["zg_n"] = sum(z.sizes["year"] for _, z in zgs)
             p["r"] = float(p2.pattern_corr(p2.coarsen_to_1deg(p["sst"]),
                                            p2.coarsen_to_1deg(ref), centered=True))
         panels.append(p)
     return panels
 
 
+def members(p):
+    return [m for m, _ in p["parts"]]
+
+
 def title(p):
-    """Panel title: model, member, resolution."""
+    """Panel title: model, realisations, resolution."""
+    if p["key"] == "ERA5":
+        return "ERA5 (observed), heatwave summers of Fig. 1"
     if p["key"] == "MPI-GE":
         return f"MPI-ESM1.2-LR (MPI-GE), 50 members · {p2.DATASETS['MPI-GE'].resolution}"
     name = fig23.RUNS[p["key"]][0]
-    return f"{name} r{p['member']} · {p2.DATASETS[p['key']].resolution}"
+    ms = members(p)
+    if len(ms) > 1:
+        name += " " + ", ".join(f"r{m}" for m in ms)
+    return f"{name} · {p2.DATASETS[p['key']].resolution}"
 
 
 def year_tag(p):
-    """Number of composited summers, and which ones for a single run."""
+    """
+    Number of composited summers: the years themselves for a single run, the
+    count per realisation for a pooled model; and where the Z300 comes from
+    when only some realisations have it.
+    """
     if p["key"] == "MPI-GE":
         return f"n = {p['n']} of {50 * (YEARS[1] - YEARS[0] + 1)} summers"
     if not p["n"]:
         return ""
-    return f"n = {p['n']}: " + ", ".join(map(str, p["years"]))
+    if len(p["parts"]) == 1:
+        tag = f"n = {p['n']}: " + ", ".join(map(str, p["parts"][0][1]))
+    else:
+        tag = f"n = {p['n']} (" + ", ".join(f"r{m}: {len(ys)}" for m, ys in p["parts"]) + ")"
+    if p["zg"] is not None and p["zg_n"] < p["n"]:
+        tag += (f"\nZ300: {', '.join(f'r{m}' for m in p['zg_members'])} only, "
+                f"n = {p['zg_n']}")
+    return tag
+
+
+def summers_list(panels):
+    """Caption sentence listing the summers of every pooled model, by realisation."""
+    items = []
+    for p in panels:
+        if p["key"] in fig23.RUNS and len(p["parts"]) > 1:
+            per = "; ".join(f"r{m} " + (", ".join(map(str, ys)) if ys else "none")
+                            for m, ys in p["parts"])
+            items.append(f"{fig23.RUNS[p['key']][0]}: {per}")
+    return ("Summers composited: " + " — ".join(items) + ".") if items else ""
 
 
 def figure(index, panels, out):
@@ -162,25 +211,33 @@ def figure(index, panels, out):
     levels = np.linspace(-vmax, vmax, 21)
     cmap = vz.anomaly_cmap()
 
-    no_zg = [f"{fig23.RUNS[p['key']][0]} r{p['member']}" for p in have if p["zg"] is None]
+    # realisations whose selected summers have no upper-air output
+    no_zg = [f"{fig23.RUNS[p['key']][0]} r{m}" for p in have if p["key"] in fig23.RUNS
+             for m, ys in p["parts"] if ys and m not in p["zg_members"]]
+    events = ", ".join(map(str, ERA5_EVENTS[:-1])) + f" and {ERA5_EVENTS[-1]}"
     caption = (
-        f"Summers ({YEARS[0]}–{YEARS[1]}) whose {meta['label']} the 90th percentile of "
+        f"(a) ERA5: composite of JJA {events}, the observed summers at or above 90% of the "
+        "MPI-GE summers of their 10-year window in heatwave days (Figs. 1 and 22), in both "
+        "versions of this figure; its r includes 2026 itself. "
+        f"(b) onwards: summers ({YEARS[0]}–{YEARS[1]}) whose {meta['label']} the 90th percentile of "
         "the 500 MPI-ESM1.2-LR summers in the 10 years around them (y−5 to y+4; the q90 line of "
-        "Fig. 23). (a) Composite of the MPI-GE summers so selected, all 50 members (historical + "
+        "Fig. 23). (b) Composite of the MPI-GE summers so selected, all 50 members (historical + "
         "SSP2-4.5); the other panels: the selected summers of each higher-resolution historical + "
-        "scenario run, one panel per realisation, years listed (ICON-EPOC: SSP5-8.5 from 2015, "
+        "scenario model, its realisations pooled into one composite (ICON-EPOC: SSP5-8.5 from 2015, "
         "to 2025; ICON-EERIE: SSP2-4.5 from 2015, r1 to 2030, r2 SST to 2014, r3 to 2020; "
         "MPI-ESM1.2-ER: SSP5-8.5 from 2015). Shading: JJA SST anomaly against 1991–2020 of the "
         f"same dataset, area-weighted mean over {p2.REGION_LABEL} removed, averaged over the "
         f"summers. Contours: JJA {ZLEVEL} hPa geopotential height anomaly, treated the same way "
         f"(box mean removed summer by summer), every {ZG_STEP} gpm, negative dashed, zero "
-        "omitted" + (f"; none where the run has no upper-air output for these years "
-                     f"({', '.join(no_zg)})" if no_zg else "")
+        "omitted; in a pooled panel averaged over the summers that have upper-air output (the "
+        "realisations named in the panel)" + (f": {', '.join(no_zg)} have none for these years"
+                                              if no_zg else "")
         + f". Dashed box{'es' if len(meta['boxes']) > 1 else ''}: where "
         f"the index is taken. r: centred pattern correlation of the SST composite with ERA5 JJA "
         f"{p2.REF_YEAR} over the box (1° grid).")
-    missing = [f"{fig23.RUNS[k][0]} r{m}" for k, (_, ms) in fig23.RUNS.items() for m in ms
-               if not any(p["key"] == k and p["member"] == m for p in panels)]
+    caption += " " + summers_list(panels)
+    missing = [name for k, (name, _) in fig23.RUNS.items()
+               if not any(p["key"] == k for p in panels)]
     if missing:
         caption += f" Not shown, no {meta['short']}: {', '.join(missing)}."
     text = textwrap.fill(caption, fig22.CAPTION_WIDTH)
@@ -252,10 +309,9 @@ def main(index):
     panels = composites(sel)
     figure(index, panels, p2.FIG_DIR / f"fig25_composite_maps_{index}.png")
     for p in panels:
-        name = "MPI-GE" if p["key"] == "MPI-GE" else f"{p['key']} r{p['member']}"
-        extra = "" if not p["n"] else (f"  r = {p['r']:+.2f}  Z300 "
-                                       f"{'yes' if p['zg'] is not None else 'no'}")
-        print(f"  {name:20s} n = {p['n']:3d}{extra}  {p['years'] if p['key'] != 'MPI-GE' else ''}")
+        extra = "" if not p["n"] else f"  r = {p['r']:+.2f}  Z300 n = {p['zg_n']}"
+        years = "" if p["key"] == "MPI-GE" else p["parts"]
+        print(f"  {p['key']:16s} n = {p['n']:3d}{extra}  {years}")
 
 
 if __name__ == "__main__":

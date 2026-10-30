@@ -16,7 +16,7 @@
 # box + 5 deg margin), anomalies against the 1991-2020 JJA climatology of the
 # same months of the same member, JJA mean. The box mean is removed at plot time.
 #
-#   MPI-GE      CMIP6 Amon/zg, 50 members, historical + ssp245
+#   MPI-GE      CMIP6 Amon/zg, 50 members, historical + ssp245, to 2100 (MPIGE_Y1)
 #   ICON-EPOC   epoc2_020 atm_pl_6h_inst `gpsm` (geopotential above surface,
 #               m2 s-2) on the native R02B08 grid 0054, not attached in the
 #               files; the 6-hourly fields are averaged to months. The surface
@@ -42,6 +42,8 @@ module load parallel 2>/dev/null || true
 export ZLEVEL=${ZLEVEL:-300}
 export Z=z${ZLEVEL}
 export Y0=1991 Y1=2030
+# MPI-GE to the end of the scenario, for fig 28's late-century slopes
+export MPIGE_Y1=2100
 export G=9.80665
 export WORK=${WORK_BASE}/model_${Z}
 mkdir -p "${WORK}/epoc_month" "${PROJECT_ROOT}/logs"
@@ -69,10 +71,10 @@ mpige_member() {
         for f in /pool/data/CMIP6/data/${exp}/${mem}/Amon/zg/gn/v*/zg_*.nc; do
             # keep the files that overlap Y0..Y1 (name ends _YYYYMM-YYYYMM.nc)
             span=${f##*_}; a=${span:0:4}; b=${span:7:4}
-            [ "$b" -ge "$Y0" ] && [ "$a" -le "$Y1" ] && files="$files $f"
+            [ "$b" -ge "$Y0" ] && [ "$a" -le "$MPIGE_Y1" ] && files="$files $f"
         done
     done
-    cdo -s -O -remapcon,"$GRID_Z" -sellevel,$((ZLEVEL * 100)) -selyear,${Y0}/${Y1} -selmon,6/8 \
+    cdo -s -O -remapcon,"$GRID_Z" -sellevel,$((ZLEVEL * 100)) -selyear,${Y0}/${MPIGE_Y1} -selmon,6/8 \
         -mergetime $files "${WORK}/mpige_${mem}_mon.nc"
     anomaly "${WORK}/mpige_${mem}_mon.nc" "$out"
     rm -f "${WORK}/mpige_${mem}_mon.nc"
