@@ -22,7 +22,7 @@
 #               m2 s-2) on the native R02B08 grid 0054, not attached in the
 #               files; the 6-hourly fields are averaged to months. The surface
 #               geopotential is constant in time, so it drops out of the anomaly.
-#               Years to 2025 (last complete JJA).
+#               Years to 2026 (last complete JJA).
 #   EERIE r1    CMOR Amon/zg (0.25 deg), hist-1950 + highres-future-ssp245
 #   MPI-ER r2   ECHAM Amon3d code 156 (geopotential height, m) of ER3,
 #               hist + ssp585 (the ssp585 files are also named *-hist_*).
@@ -115,7 +115,7 @@ EPOC=/work/bm1313/b383127/epoc-icon-2024.10_aerosols/experiments/epoc2_020/work
 export EPOC
 export GRID_EPOC=/pool/data/ICON/grids/public/mpim/0054/icon_grid_0054_R02B08_G.nc
 # last complete JJA of the still-running transient
-EPOC_Y1=2025
+EPOC_Y1=2026
 export WGT_EPOC=${WORK}/wgt_epoc_${Z}_1deg.nc
 if [ ! -s "${WORK}/epoc_r1_anom.nc" ]; then
     sample=$(ls ${EPOC}/run_20000601T*/epoc2_020_atm_pl_6h_inst_20000602T000000Z.nc)

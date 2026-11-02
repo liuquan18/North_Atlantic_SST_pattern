@@ -22,7 +22,7 @@
 #           10-year windows (y-5 to y+4) of 1940 and 2026 need the years around,
 #           fig 28 the late century (2061-2100).
 #   ICON-EPOC epoc2_020 atm_2d_1mth_mean `psl` on the native R02B08 grid 0054
-#           (attached with -setgrid), 1990-2025. Files are stamped at the END of
+#           (attached with -setgrid), 1990-2026. Files are stamped at the END of
 #           their month, so the months are picked by their run_<YYYYMM> directory.
 #   EERIE   r1: CMOR Amon/psl (0.25 deg), hist-1950 + highres-future-ssp245;
 #           r2 / r3 (erc2023 / erc2024): the DKRZ 0.25 deg remap of the monthly
@@ -88,7 +88,7 @@ mpige_member() {
 export -f mpige_member
 parallel -j 25 mpige_member ::: $(seq 1 50)
 
-echo "=== 3/6 ICON-EPOC JJA psl, 1990-2025 ==="
+echo "=== 3/6 ICON-EPOC JJA psl, 1990-2026 ==="
 export EPOC=/work/bm1313/b383127/epoc-icon-2024.10_aerosols/experiments/epoc2_020/work
 export GRID_EPOC=/pool/data/ICON/grids/public/mpim/0054/icon_grid_0054_R02B08_G.nc
 export WGT_EPOC=${WORK}/wgt_epoc_r144x73.nc
@@ -105,7 +105,7 @@ epoc_year() {
 }
 export -f epoc_year
 if [ ! -s "${WORK}/epoc/slp_jja_r1.nc" ]; then
-    parallel -j 16 epoc_year ::: $(seq 1990 2025)
+    parallel -j 16 epoc_year ::: $(seq 1990 2026)
     cdo -s -O -mergetime ${WORK}/epoc/slp_jja_[12]*.nc "${WORK}/epoc/slp_jja_r1.nc"
     rm -f ${WORK}/epoc/slp_jja_[12]*.nc
 fi

@@ -1,10 +1,12 @@
 """
 Stack the per-member JJA geopotential height anomalies of 10_model_zg.sh into
 one file per dataset, variable z<ZLEVEL> (gpm) over (member, year, lat, lon).
+Arguments: the work-file prefixes to stack (default: all of DATASETS).
 """
 import glob
 import os
 import re
+import sys
 
 import xarray as xr
 
@@ -14,11 +16,13 @@ OUT = os.environ.get("OUT_BASE",
                      "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/sst_anomaly")
 #: work-file prefix -> output stem (as the SST anomaly files of the dataset)
 DATASETS = {"mpige": "mpige", "epoc": "epoc2_020", "eerie": "eerie_hist_ssp245",
-            "mpier": "mpier"}
+            "mpier": "mpier", "epocctrl": "epoc2_010"}
 
 
-def main():
+def main(keys):
     for prefix, stem in DATASETS.items():
+        if prefix not in keys:
+            continue
         files = glob.glob(f"{WORK}/{prefix}_r*_anom.nc")
         if not files:
             print(f"  {prefix}: no files, skipped")
@@ -44,4 +48,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:] or list(DATASETS))

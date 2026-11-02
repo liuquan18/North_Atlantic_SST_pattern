@@ -70,7 +70,9 @@ echo "=== merging per year ==="
 for y in $(seq "$FIRST_YEAR" "$LAST_YEAR"); do
     out="${WORK}/tmax_${y}.nc"
     [ -s "$out" ] && continue
-    [ "$(ls ${WORK}/mon/tmax_${y}??.nc 2>/dev/null | wc -l)" -eq 7 ] || { echo "  ${y}: incomplete, skipped"; continue; }
+    # through September: October only completes the percentile window of the
+    # reference years, and the still-running transient may not have written it
+    [ "$(ls ${WORK}/mon/tmax_${y}0[4-9].nc 2>/dev/null | wc -l)" -eq 6 ] || { echo "  ${y}: incomplete, skipped"; continue; }
     cdo -s -O -f nc4 -z zip_1 -setname,tmax -setunit,degC -subc,273.15 \
         -setreftime,1850-01-01,00:00:00,1day -mergetime ${WORK}/mon/tmax_${y}??.nc "$out"
     echo "  ${y}: $(cdo -s ntime "$out") days"

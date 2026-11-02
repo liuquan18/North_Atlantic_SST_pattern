@@ -109,7 +109,7 @@ DATASETS = {
                 "3 realizations, historical + ssp585"),
         Dataset("ICON-EPOC-hist", "km-scale ICON (EPOC, hist+ssp585)",
                 "epoc2_020_jja_anom_na025.nc", "epoc2_020_jja_gmsst.nc",
-                "model", "10 km atm / 5 km ocean", (1990, 2025),
+                "model", "10 km atm / 5 km ocean", (1990, 2026),
                 "historical + SSP5-8.5 forcing (from 2015), started 1990"),
         # epoc2_010: irad_co2=2 with aerosols and ozone pinned at 1990 -- a
         # constant-forcing control, not a historical run.
@@ -417,6 +417,16 @@ DIPOLE_BOXES = {
                 lon=(0.0, 20.0), lat=(30.0, 45.0)),
 }
 DIPOLE_LABEL = "MED − NAL"
+
+#: Box-difference index of JJA 300 hPa geopotential height, EUR − NAL: the high
+#: centre over Europe minus the low centre over the North Atlantic. Not the SST
+#: boxes above; the "nal" boxes differ.
+Z300_BOXES = {
+    "eur": dict(label="Europe", detail="35–55°N, 10°W–20°E",
+                lon=(-10.0, 20.0), lat=(35.0, 55.0)),
+    "nal": dict(label="North Atlantic", detail="35–55°N, 50–20°W",
+                lon=(-50.0, -20.0), lat=(35.0, 55.0)),
+}
 
 
 def dipole_file() -> Path:

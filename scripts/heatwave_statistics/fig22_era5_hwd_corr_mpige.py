@@ -11,10 +11,13 @@ the MPI-GE summers of its climate (no fitted distribution).
     2026 itself is drawn too, at r = 1 by construction.
 (c) the same for a blocking index, the Z300 box difference EUR − NAL of
     fig22_z300_boxdiff_mpige.py: the JJA 300 hPa geopotential height anomaly
-    averaged over the heatwave box minus that over the North Atlantic box of
-    the SST index (in m; data/sst_anomaly/<ds>_jja_z300_anom_1deg.nc). The
+    averaged over the high centre over Europe minus that over the low centre
+    over the North Atlantic (p2.Z300_BOXES; in m;
+    data/sst_anomaly/<ds>_jja_z300_anom_1deg.nc). The
     rise of Z300 with the warming column largely cancels. The MPI-GE windows
     need its Z300 from 1935 (pre_process/10_model_zg.sh, MPIGE_Y0).
+    With the argument `eur`, row (c) is the EUR box mean alone, which keeps that
+    rise (ROW_C; output fig22_era5_hwd_corr_mpige_eur).
 
 The box-difference index MED − NAL, formerly panel (c), and its two box means
 are in fig22_boxdiff_mpige.py.
@@ -58,30 +61,24 @@ OUT = p2.FIG_DIR / "fig22_era5_hwd_corr_mpige.png"
 #: under the last row for its tick labels, and the caption's title + one line
 ROW_IN, BOTTOM_IN, CAPTION_HEAD_IN, LINE_IN = 2.23, 0.42, 0.25, 0.115
 CAPTION_WIDTH = 122
-#: the Z300 box difference of row (c): heatwave box minus the SST index's North Atlantic box
+#: the Z300 box difference of row (c): the two boxes of p2.Z300_BOXES
 Z300_LABEL = "EUR − NAL"
-CAPTION_TITLE = ("Heatwave days, the SST pattern and blocking of each observed summer against the "
-                 "simulated summers of its climate")
-CAPTION = (
+CAPTION_AB = (
     f"(a) ERA5 June–August heatwave days averaged over land in {hw.MEAN_BOX_LABEL} (black), as in "
     "Fig. 20; blue: heatwave days of MPI-ESM1.2-LR: the 50th, 90th and 99th percentiles (solid) "
     "and the mean (dashed) of its 50 members in the 10 years around each year (y−5 to y+4, 500 "
     "summers). (b) The same for the SST pattern: centred pattern correlation of each JJA SST "
     "anomaly with that of ERA5 JJA 2026 over 20–60°N, 80°W–40°E (area-weighted box mean "
     "removed, anomalies against 1991–2020 of the same dataset); ERA5 in black, 2026 at r = 1 "
-    f"by construction. (c) The same for a blocking index, the Z300 box difference {Z300_LABEL}: "
-    f"JJA 300 hPa geopotential height anomaly averaged over the heatwave box ({hw.MEAN_BOX_LABEL}) "
-    f"minus that over the North Atlantic box of the SST index ({p2.DIPOLE_BOXES['nal']['detail']}), "
-    "in m, anomalies against 1991–2020 of the same dataset; positive: a ridge over Europe with "
-    "a trough upstream, as in a blocked summer; the rise of Z300 with the warming column "
-    "largely cancels. "
+    "by construction. ")
+CAPTION_END = (
     "Marked: 2003, 2026 and every summer ranked at or above 90% of its window in heatwave days. "
     f"Right: the same quantities in ERA5, {BOX_YEARS[0]}–{p2.REF_YEAR}, and in the "
     "higher-resolution runs, all "
     f"historical + scenario summers {BOX_YEARS[0]}–{BOX_YEARS[1]} where available, pooled over "
     "members, keeping the summers that have both quantities (all three in the Z300 row; "
     "sample sizes of a row that differ from the bottom one at its top) (ICON-EPOC: 1 run, "
-    "1991–2025; ICON-EERIE: 3, r1 1991–2030, r2 to 2014, r3 to 2020; "
+    "1991–2026; ICON-EERIE: 3, r1 1991–2030, r2 to 2014, r3 to 2020; "
     "MPI-ESM1.2-ER: 2, r2 and r3 1991–2030; "
     "sample size in brackets; box 25th–75th percentile, line median, whiskers 5th–95th "
     "percentile, dots beyond); "
@@ -89,7 +86,7 @@ CAPTION = (
     "MPI-ESM1.2-ER r2 only.")
 
 
-def z300_m(key, box=hw.MEAN_BOX):
+def z300_m(key, box):
     """
     (member, year) Series of fig 28's Z300 index of `key` over `box`, in m.
     Fig 28 imports this module, so it is imported here, not at the top.
@@ -100,7 +97,38 @@ def z300_m(key, box=hw.MEAN_BOX):
 
 def z300_boxdiff_m(key):
     """(member, year) Series of the Z300 box difference Z300_LABEL, in m."""
-    return z300_m(key) - z300_m(key, p2.DIPOLE_BOXES["nal"])
+    return z300_m(key, p2.Z300_BOXES["eur"]) - z300_m(key, p2.Z300_BOXES["nal"])
+
+
+def z300_eur_m(key):
+    """(member, year) Series of the Z300 mean over the EUR box alone, in m."""
+    return z300_m(key, p2.Z300_BOXES["eur"])
+
+
+#: the versions of row (c): loader, y label, figure title, caption, output
+ROW_C = {
+    "boxdiff": dict(
+        load=z300_boxdiff_m, ylabel=f"{Z300_LABEL} Z300 anomaly (m)", out=OUT,
+        title=("Heatwave days, the SST pattern and blocking of each observed summer against the "
+               "simulated summers of its climate"),
+        caption=(
+            f"(c) The same for a blocking index, the Z300 box difference {Z300_LABEL}: JJA 300 hPa "
+            "geopotential height anomaly averaged over the high centre over Europe "
+            f"({p2.Z300_BOXES['eur']['detail']}) minus that over the low centre over the North "
+            f"Atlantic ({p2.Z300_BOXES['nal']['detail']}), in m, anomalies against 1991–2020 of the "
+            "same dataset; positive: a ridge over Europe with a trough upstream, as in a blocked "
+            "summer; the rise of Z300 with the warming column largely cancels. ")),
+    "eur": dict(
+        load=z300_eur_m, ylabel="EUR-box Z300 anomaly (m)",
+        out=OUT.with_name(f"{OUT.stem}_eur.png"),
+        title=("Heatwave days, the SST pattern and EUR Z300 of each observed summer against the "
+               "simulated summers of its climate"),
+        caption=(
+            "(c) The same for the Z300 high over Europe: JJA 300 hPa geopotential height anomaly "
+            f"averaged over the EUR box ({p2.Z300_BOXES['eur']['detail']}), land and sea, in m, "
+            "anomalies against 1991–2020 of the same dataset; no box is subtracted, so the rise of "
+            "Z300 with the warming column stays in. ")),
+}
 
 
 def window_levels(mpige, years):
@@ -267,7 +295,8 @@ def figure(win_hwd, years, hwd, r, marked, name, title, caption, out, boxes=None
                       f"{w['mean']:+.2f}, 90th {w['q90']:+.2f}, 99th {w['q99']:+.2f}")
 
 
-def main():
+def main(row="boxdiff"):
+    c = ROW_C[row]
     meth = fig18.METHODS["rank"]
     win_hwd = pd.read_csv(fig18.DIR / f"{meth['windows']}.csv")
     years, raw, _ = fig18.load_series("hwd")
@@ -275,16 +304,17 @@ def main():
     with xr.open_dataset(p2.corr_file(p2.PLOT_VARIANTS[0])) as ds:
         era5_r = ds["ERA5"].load()
     era5_r = era5_r.sel(year=slice(int(years[0]), p2.REF_YEAR)).dropna("year")
-    era5_z = z300_boxdiff_m("ERA5").xs(1, level="member").to_xarray()
+    era5_z = c["load"]("ERA5").xs(1, level="member").to_xarray()
     era5_z = era5_z.sel(year=slice(int(years[0]), p2.REF_YEAR)).dropna("year")
-    mpige_z = z300_boxdiff_m("MPI-GE").to_xarray()
+    mpige_z = c["load"]("MPI-GE").to_xarray()
     corr = (p2.corr_file(p2.PLOT_VARIANTS[0]), "")
     # the Z300 row's boxes on the summers that also have the other two
     # quantities; the rows above keep theirs (Z300 is missing for EERIE r2-r3)
-    boxes = box_samples([corr]) + box_samples([corr, z300_boxdiff_m])[-1:]
-    figure(win_hwd, years, raw, era5_r, marked, "ERA5", CAPTION_TITLE, CAPTION, OUT,
-           boxes=boxes, rows=[(era5_z, mpige_z, f"{Z300_LABEL} Z300 anomaly (m)")])
+    boxes = box_samples([corr]) + box_samples([corr, c["load"]])[-1:]
+    figure(win_hwd, years, raw, era5_r, marked, "ERA5", c["title"],
+           CAPTION_AB + c["caption"] + CAPTION_END, c["out"],
+           boxes=boxes, rows=[(era5_z, mpige_z, c["ylabel"])])
 
 
 if __name__ == "__main__":
-    main()
+    main(*sys.argv[1:2])

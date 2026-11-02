@@ -29,6 +29,7 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 | `05_mpi_er.sh` | MPI-ESM1.2-ER, 3 realizations (calls `stack_mpi_er.py`) |
 | `06_kmscale_zoom.sh` | native-resolution zoom fields for figure 5 (needs 01 and 03) |
 | `10_model_zg.sh` | JJA Z300 anomalies of MPI-GE, ICON-EPOC, EERIE r1 and MPI-ER r2, 1991–2030, on the ERA5 Z300 1° grid (needs `ZLEVEL=300 09_era5_zg.sh`; `stack_zg.py`), for fig 25 |
+| `12_epoc_ctrl_circ.sh` | JJA Z300 (from model levels, `zg_ml2pl.py`, checked against the transient's pressure-level output) and SLP of the EPOC control, 1990–2024, for fig 28 (needs `10`, `11`) |
 | `11_slp.sh` | JJA mean SLP of ERA5 (1940–2026) and the 50 MPI-GE members (1935–2030), 2.5°, 20–80°N 90°W–40°E → `data/circulation/` (`stack_slp.py`), for `circulation/` |
 
 ## sst_pattern_correlation/

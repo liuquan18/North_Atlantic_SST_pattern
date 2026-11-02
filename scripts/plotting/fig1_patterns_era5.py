@@ -10,13 +10,18 @@ climate in heatwave days (figure 20): JJA 2003 and JJA 1947.
               pattern correlation against JJA 2026, and the geopotential height
               anomaly of the season as contours (500 hPa by default), treated
               like the SST: 1991-2020 anomaly, area-weighted box mean removed
-              (data/sst_anomaly/era5_jja_z<level>_anom_1deg.nc, pre_process/09_era5_zg.sh)
+              (data/sst_anomaly/era5_jja_z<level>_anom_1deg.nc, pre_process/09_era5_zg.sh);
+              the JJA 2026 panel also marks the EUR high box of the height
+              difference index (src.pattern_2026.Z300_BOXES)
 
 Same layout and colour scales as fig1_patterns_simulations.py, whose
 plot_figure() draws it. With an argument `atl` or `med`, r is scored over
 that half of the box alone (file suffix _atl / _med); with `z<level>`, e.g.
 `z300`, the contours are of that level (file suffix _z300; 500 is the
-default and gets no suffix).
+default and gets no suffix); with `slp`, they are of mean sea-level pressure
+treated the same way (data/circulation/era5_jja_slp_2p5deg.nc,
+pre_process/11_slp.sh; file suffix _slp), and the JJA 2003 panel marks the EUR
+high box as well.
 """
 import sys
 from pathlib import Path
@@ -31,6 +36,11 @@ from fig1_patterns_simulations import VARIANT, column, plot_figure, scored_over,
 
 YEARS = [p2.REF_YEAR, 2003, 1947]
 ZG_DEFAULT = 500
+#: contours of the `slp` variant; the 2.5 deg file spans 20-80N, 90W-40E
+SLP_STYLE = dict(name="SLP", long="mean sea-level pressure", step=1, unit="hPa")
+#: contours of the `z300` variant, whose anomalies are about twice those at 500 hPa
+Z300_STYLE = dict(name="Z300", long="300 hPa geopotential height", step=20, unit="gpm")
+SLP_BOX_YEARS = (p2.REF_YEAR, 2003)
 
 
 def zg_field(year, level=ZG_DEFAULT):
@@ -48,7 +58,20 @@ def zg_field(year, level=ZG_DEFAULT):
     return z - float((box * w).sum() / w.sum())
 
 
-def main(half=None, level=ZG_DEFAULT):
+def slp_field(year):
+    """
+    JJA mean sea-level pressure anomaly (hPa) of `year` against CLIM_PERIOD,
+    minus its area-weighted mean over the analysis box, as zg_field.
+    """
+    with xr.open_dataset(p2.DATA_DIR.parent / "circulation" / "era5_jja_slp_2p5deg.nc") as ds:
+        slp = ds["slp"].load()
+    slp = (slp - slp.sel(year=slice(*p2.CLIM_PERIOD)).mean("year")).sel(year=year)
+    box = slp.sel(lon=slice(*p2.REGION["lon"]), lat=slice(*p2.REGION["lat"]))
+    w = np.cos(np.deg2rad(box.lat)) * xr.ones_like(box.lon)
+    return slp - float((box * w).sum() / w.sum())
+
+
+def main(half=None, level=ZG_DEFAULT, slp=False):
     with xr.open_dataset(p2.corr_file(VARIANT, half)) as ds:
         corr = ds["ERA5"].load()
     label = p2.DATASETS["ERA5"].label
@@ -57,15 +80,20 @@ def main(half=None, level=ZG_DEFAULT):
         ref = year == p2.REF_YEAR
         r = None if ref else float(corr.sel(year=year))
         title = f"{label}\nJJA {year}" + ("  ·  reference" if ref else "")
-        cols.append(dict(column("ERA5", year, None, r, title), zg=zg_field(year, level)))
+        c = dict(column("ERA5", year, None, r, title),
+                 zg=slp_field(year) if slp else zg_field(year, level))
+        if year in SLP_BOX_YEARS if slp else ref:
+            c["zg_boxes"] = {"EUR high": p2.Z300_BOXES["eur"]}
+        cols.append(c)
     plot_figure(cols, "European summer heatwaves and the North Atlantic + Mediterranean SST pattern "
                       f"in ERA5: JJA {', '.join(map(str, YEARS[:-1]))} and {YEARS[-1]}{scored_over(half)}",
                 p2.FIG_DIR / f"fig1_patterns_2026_era5{p2.half_suffix(half)}"
-                             f"{'' if level == ZG_DEFAULT else f'_z{level}'}.png",
-                sst_region_label=p2.half_label(half), sst_box=sst_box(half), zg_level=level)
+                             f"{'_slp' if slp else '' if level == ZG_DEFAULT else f'_z{level}'}.png",
+                sst_region_label=p2.half_label(half), sst_box=sst_box(half), zg_level=level,
+                zg_style=SLP_STYLE if slp else Z300_STYLE if level == 300 else None)
 
 
 if __name__ == "__main__":
     levels = [int(a[1:]) for a in sys.argv[1:] if a.startswith("z")]
-    main(p2.half_from_argv([sys.argv[0]] + [a for a in sys.argv[1:] if not a.startswith("z")]),
-         *levels[:1])
+    rest = [a for a in sys.argv[1:] if not a.startswith("z") and a != "slp"]
+    main(p2.half_from_argv([sys.argv[0]] + rest), *(levels[:1] or [ZG_DEFAULT]), slp="slp" in sys.argv[1:])

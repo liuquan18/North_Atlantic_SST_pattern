@@ -208,8 +208,8 @@ Forcing, read off the run scripts rather than the pad (they differ):
 **transient historical + SSP5-8.5 greenhouse-gas run**, but with Kinne aerosols
 held at 1850, which is what the `_aerosols` build name refers to.
 
-Coverage: `epoc2_010` 1990–2024; `epoc2_020` is still running (at 2026-03 as
-of 2026-10-05), so its last complete JJA is 2025. Neither has JJA 2026 yet.
+Coverage: `epoc2_010` 1990–2024; `epoc2_020` is still running (at 2026-09 as
+of 2026-11-02), and its last complete JJA is 2026. `epoc2_010` has no JJA 2026.
 From 2025-01 on, `epoc2_020` files are written uncompressed (~2.5 GB instead
 of ~0.85 GB); variables, names and the three traps above are unchanged.
 
