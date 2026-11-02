@@ -11,7 +11,7 @@ The field is chosen by the argument `z300` (default) or `slp` (CIRC), as fig
     box minus that over the North Atlantic box (CIRC 'east', 'west': for Z300
     the high and low centres of p2.Z300_BOXES, 35–55°N, 10°W–20°E and 35–55°N,
     50–20°W; for SLP src.heatwave.MEAN_BOX, 35–60°N, 10°W–30°E, and the SST
-    index's p2.DIPOLE_BOXES['nal'], 40–50°N, 60–20°W),
+    index's p2.DIPOLE_BOXES['nal'], 35–55°N, 50–20°W),
     on the 50th / 90th / 99th percentiles and mean of the 500 MPI-GE summers in
     the 10 years around each year. A ridge / high over Europe with a trough /
     low upstream, the pattern of a blocked summer, is positive.
@@ -67,7 +67,7 @@ CIRC = {
                 east_y="Heatwave-box", west_y="North Atlantic",
                 desc="high pressure over Europe with low pressure upstream",
                 note="unlike Z300, SLP has little trend, so (a) mainly sharpens the contrast",
-                runs=("ICON-EPOC: 1 run, 1991–2025; ICON-EERIE: 3, 1991–2030; MPI-ESM1.2-ER: "
+                runs=("ICON-EPOC: 1 run, 1991–2026; ICON-EERIE: 3, 1991–2030; MPI-ESM1.2-ER: "
                       "r2, 1991–2030; r1 and r3 have no SLP over 1991–2020")),
 }
 

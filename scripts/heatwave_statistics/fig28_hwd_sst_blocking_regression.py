@@ -49,8 +49,8 @@ the box difference, in step; the detrended version keeps only the year-to-year
 co-variability.
 
 fig28_..._bars / _bars_detrended: the slopes and r of the three pairs per
-dataset, and of MED - NAL on the SLP anomaly over the NAL low centre
-(p2.Z300_BOXES["nal"]; BAR_PAIR), as is and detrended, one figure each on the same axes; MPI-GE's whisker is the 5th-95th percentile of the
+dataset, and of MED - NAL on the SLP box difference EUR - NAL, over the two
+boxes of the Z300 one (p2.Z300_BOXES; BAR_PAIR), as is and detrended, one figure each on the same axes; MPI-GE's whisker is the 5th-95th percentile of the
 same statistic fitted to each member alone over PERIOD (37 seasons, the
 length of the observed record), i.e. how far one realisation of that length
 can stray.
@@ -106,6 +106,11 @@ def slp_index(key, box=hw.MEAN_BOX):
     if "member" not in x.dims:
         x = x.expand_dims(member=[1])
     return x.to_series()
+
+
+def slp_boxdiff(key):
+    """(member, year) Series of the SLP box difference EUR − NAL (hPa)."""
+    return slp_index(key, p2.Z300_BOXES["eur"]) - slp_index(key, p2.Z300_BOXES["nal"])
 
 
 def z300_index(key, box):
@@ -168,8 +173,8 @@ def pairs(var):
             ("bd", "hwd", "days per °C", f"Heatwave days on {p2.DIPOLE_LABEL}")]
 
 
-#: the extra regression of the bar figures: MED - NAL on the SLP over the NAL low centre
-BAR_PAIR = ("nal", "bd", "°C per hPa", f"{p2.DIPOLE_LABEL} on NAL SLP")
+#: the extra regression of the bar figures: MED - NAL on the SLP box difference EUR - NAL
+BAR_PAIR = ("slpd", "bd", "°C per hPa", f"{p2.DIPOLE_LABEL} on {fig22.Z300_LABEL} SLP")
 
 
 def bar_pairs(var):
@@ -192,13 +197,13 @@ def box_difference(key):
 
 
 def season_table(var):
-    """One row per dataset, member and year with all the quantities (and the NAL SLP)."""
+    """One row per dataset, member and year with all the quantities (and the EUR - NAL SLP)."""
     t = pd.read_csv(fig18.DIR / "season_table.csv")
     rows = []
     for key in KEYS:
         h = t[t.dataset == key].set_index(["member", "year"]).hwd
         d = pd.DataFrame({"hwd": h, "bd": box_difference(key), "blk": CIRC[var]["load"](key),
-                          "nal": slp_index(key, p2.Z300_BOXES["nal"])})
+                          "slpd": slp_boxdiff(key)})
         d = d.dropna().reset_index()
         # the models over PERIOD only, so that the detrending sees the seasons
         # of the panel (as fig 8); ERA5 keeps its whole record
@@ -215,7 +220,7 @@ def season_table(var):
 def detrend(t):
     """All the quantities with their forced part removed (as fig 8's detrend)."""
     t = t.copy()
-    cols = ["hwd", "bd", "blk", "nal"]
+    cols = ["hwd", "bd", "blk", "slpd"]
     for key, g in t.groupby("dataset"):
         if g.member.nunique() >= p2.ENSEMBLE_MEAN_MIN_MEMBERS:
             t.loc[g.index, cols] = g[cols] - g.groupby("year")[cols].transform("mean")
@@ -420,7 +425,7 @@ def bars(res, spread, var, version, lims, out):
     caption = (
         "Slope (top, in the units of y per unit of x) and Pearson r (bottom) of the three "
         f"regressions of Fig. 28{' (detrended)' if detrended else ''} and of {p2.DIPOLE_LABEL} on "
-        "NAL SLP per dataset"
+        f"{fig22.Z300_LABEL} SLP per dataset"
         + (", with the forced part of all the quantities removed (MPI-GE minus its ensemble "
            "mean year by year, every other record and ICON-EERIE member minus its own linear "
            "trend)" if detrended else ", as is (no trend removed)")
@@ -435,9 +440,10 @@ def bars(res, spread, var, version, lims, out):
         + (". ICON-EERIE members pooled. " if var == "slp" else ". ")
         + "Light orange: ICON-EPOC control, constant 1990 forcing (not pre-industrial), to 2024, "
         "its heatwave days from daily mean temperature. "
-        + f"{CIRC[var]['desc']} NAL SLP: JJA mean sea-level pressure anomaly averaged over the low "
-        f"centre over the North Atlantic ({p2.Z300_BOXES['nal']['detail']}), land and sea, in hPa, "
-        f"against 1991–2020 of the same dataset and member. Heatwave days over land in {hw.MEAN_BOX_LABEL}; {p2.DIPOLE_LABEL} the "
+        + f"{CIRC[var]['desc']} {fig22.Z300_LABEL} SLP: JJA mean sea-level pressure anomaly averaged "
+        f"over the high centre over Europe ({p2.Z300_BOXES['eur']['detail']}) minus that over the "
+        f"low centre over the North Atlantic ({p2.Z300_BOXES['nal']['detail']}), land and sea, in "
+        f"hPa, against 1991–2020 of the same dataset and member. Heatwave days over land in {hw.MEAN_BOX_LABEL}; {p2.DIPOLE_LABEL} the "
         "SST box difference. "
         "Same axes as the " + ("raw" if detrended else "detrended") + " version of this figure.")
     # wider than the other figures, so that each panel stays as wide as with three columns
@@ -483,7 +489,7 @@ def bars(res, spread, var, version, lims, out):
     fig18.style_axes(axes.ravel())
     fig.text(0.012, (caption_in - 0.04) / height,
              "Regression slopes and correlations between heatwave days, the SST contrast, "
-             + CIRC[var]["name"] + " and NAL SLP"
+             + CIRC[var]["name"] + f" and {fig22.Z300_LABEL} SLP"
              + (", detrended" if detrended else ""),
              ha="left", va="top", fontsize=fs, fontweight="bold", color=vz.INK)
     fig.text(0.012, (caption_in - fig22.CAPTION_HEAD_IN) / height, text, ha="left", va="top",

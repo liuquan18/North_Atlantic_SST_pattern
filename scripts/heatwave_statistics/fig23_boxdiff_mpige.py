@@ -26,7 +26,7 @@ CAPTION_TITLE = "The Mediterranean–North Atlantic SST contrast of the higher-r
 CAPTION = (
     f"As Fig. 22 box difference, {fig23.YEARS[0]}–{fig23.YEARS[1]}, with the higher-resolution "
     "historical + scenario runs in place of ERA5, one line per realisation: ICON-EPOC "
-    "(SSP5-8.5 from 2015, 10 km atmosphere / 5 km ocean, 1 run, to 2025), ICON-EERIE "
+    "(SSP5-8.5 from 2015, 10 km atmosphere / 5 km ocean, 1 run, to 2026), ICON-EERIE "
     "(SSP2-4.5 from 2015, 10 km / 5 km, r1 to 2050, r2 to 2014, r3 to 2020) and MPI-ESM1.2-ER "
     "(SSP5-8.5 from 2015, ~100 km atmosphere / ~10 km ocean, r2 and r3); line style = member. "
     f"(a) Box-difference index {p2.DIPOLE_LABEL}: JJA SST anomaly averaged over the "

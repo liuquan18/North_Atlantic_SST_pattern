@@ -279,12 +279,15 @@ ERA5 has it, which models at other resolutions cannot do. A coarser measure of
 2026-likeness is the contrast between two large boxes
 (`src.pattern_2026.DIPOLE_BOXES`, `sst_pattern_correlation/03_box_difference.py`,
 `sst_pattern_corr/box_difference.nc`): **MED − NAL** = area-mean JJA SST
-anomaly over the Mediterranean, 30–45°N, 0–20°E, minus that over the
-mid-latitude North Atlantic, 40–50°N, 60–20°W, both on the common 1° ocean
-mask. Warming common to both boxes largely cancels. ERA5 JJA 2026 is +2.73 °C
-(MED +2.52, NAL −0.21), the record since 1940, followed by 2003 (+2.25) and
-1947 (+2.04), the same summers that stand out in heatwave days; the 1991–2020
-standard deviation is 0.78 °C. Drawn as fig. 22 (c).
+anomaly over the Mediterranean, 30–45°N, 0–30°E, minus that over the
+North Atlantic, 35–55°N, 50–20°W (the NAL box of the Z300 difference), both on
+the common 1° ocean mask. The MED box takes in the western corner of the Black
+Sea (7 of its 236 cells; ERA5 MED 2026 +1.94 °C with them, +1.98 °C without).
+Until 2026-11-02 the boxes were 30–45°N, 0–20°E and 40–50°N, 60–20°W.
+Warming common to both boxes largely cancels. ERA5 JJA 2026 is +1.97 °C
+(MED +1.94, NAL −0.04), the record since 1940, followed by 1947 (+1.80) and
+2003 (+1.64), the same summers that stand out in heatwave days; the 1991–2020
+standard deviation is 0.67 °C. Drawn as fig. 22 (c).
 
 **Heatwave area mean.** Every area mean of heatwave quantities (scatter y
 axes, the tags on the heatwave maps) is over the land of southern Europe,

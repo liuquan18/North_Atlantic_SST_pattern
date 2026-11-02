@@ -5,8 +5,8 @@ One scatter panel per dataset with daily Tmax (ERA5, MPI-GE, MPI-ESM1.2-ER
 r2 and r3, km-scale ICON (EPOC) and EERIE). Every season (and member) in
 PERIOD = 1990-2026 is one point -- the window the observations cover, so
 the models are compared over the same climate and not scored on their
-late-century seasons. A record that ends earlier (EPOC, until its JJA 2026
-is processed; EERIE r2/r3) contributes the seasons it has. ERA5 2026 is a
+late-century seasons. A record that ends earlier (EERIE r2/r3) contributes
+the seasons it has. ERA5 2026 is a
 point like any other and enters the fit and its r (at x = 1 by construction):
 
   x   pattern correlation of its JJA SST pattern with ERA5 JJA 2026

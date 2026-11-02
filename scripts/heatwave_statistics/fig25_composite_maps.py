@@ -25,8 +25,8 @@ averaged (data/sst_anomaly/<dataset>_jja_z300_anom_1deg.nc,
 pre_process/10_model_zg.sh). Runs without upper-air output over these years
 (EERIE r2 and r3, MPI-ER r3) get the SST alone. The tag is the centred pattern
 correlation of the SST composite with ERA5 JJA 2026 over the box. Panel (a) of
-the boxdiff figure also marks the EUR and NAL boxes of the Z300 box difference
-(p2.Z300_BOXES).
+the boxdiff figure marks the MED and NAL boxes of the SST index (p2.DIPOLE_BOXES)
+and the EUR box that with NAL gives the Z300 box difference (p2.Z300_BOXES).
 
 With the argument `slp` the contours are JJA mean sea-level pressure instead
 (data/circulation/<dataset>_jja_slp_2p5deg.nc, pre_process/11_slp.sh), treated
@@ -61,8 +61,13 @@ YEARS = fig23.YEARS
 QUANTILE = "q90"
 ZLEVEL = 300
 VMAX_CAP = 1.5
-#: outline and label of the Z300 boxes marked in panel (a)
-Z300_BOX_COLOR = "#00843d"
+#: outline and label of the named boxes in panel (a) of the boxdiff figure
+BOX_COLOR = "#00843d"
+#: named boxes of panel (a) of the boxdiff figure; MED's label in its lower right corner, over
+#: land and clear of the EUR box that overlaps its upper part
+MARKED_BOXES = {"med": p2.DIPOLE_BOXES["med"], "nal": p2.DIPOLE_BOXES["nal"],
+                "eur": p2.Z300_BOXES["eur"]}
+LOWER_RIGHT_LABEL = {"med"}
 NCOL = 2
 #: the observed heatwave summers of fig 1 (ERA5), composited in panel (a)
 ERA5_EVENTS = sorted(fig1_era5.YEARS)
@@ -71,10 +76,9 @@ ZG_STEM = {"MPI-GE": "mpige", "ICON-EPOC-hist": "epoc2_020",
            "EERIE": "eerie_hist_ssp245", "MPI-ER": "mpier"}
 INDICES = {
     "hwd": dict(label=f"number of heatwave days over land in {hw.MEAN_BOX_LABEL} reaches",
-                short="heatwave days", boxes=[hw.MEAN_BOX], z300_boxes={}),
+                short="heatwave days", boxes=[hw.MEAN_BOX], marked={}),
     "boxdiff": dict(label=f"box-difference index {p2.DIPOLE_LABEL} reaches",
-                    short=p2.DIPOLE_LABEL, boxes=list(p2.DIPOLE_BOXES.values()),
-                    z300_boxes=p2.Z300_BOXES),
+                    short=p2.DIPOLE_LABEL, boxes=[], marked=MARKED_BOXES),
 }
 
 
@@ -282,12 +286,13 @@ def figure(index, panels, out, field="z300"):
         f"zero omitted; in a pooled panel averaged over the summers that have {ctr['output']} (the "
         "realisations named in the panel)" + (f": {', '.join(no_ctr)} {'has' if len(no_ctr) == 1 else 'have'} none for these years"
                                               if no_ctr else "")
-        + f". Dashed box{'es' if len(meta['boxes']) > 1 else ''}: where "
-        f"the index is taken. r: centred pattern correlation of the SST composite with ERA5 JJA "
+        + (". Dashed box: where the index is taken" if meta["boxes"] else "")
+        + f". r: centred pattern correlation of the SST composite with ERA5 JJA "
         f"{p2.REF_YEAR} over the box (1° grid)."
-        + (f" Solid green boxes in (a): EUR ({p2.Z300_BOXES['eur']['detail']}) and NAL "
-           f"({p2.Z300_BOXES['nal']['detail']}), the Z300 box difference {fig22.Z300_LABEL} of "
-           "Fig. 22." if meta["z300_boxes"] else ""))
+        + (f" Solid green boxes in (a): MED ({p2.DIPOLE_BOXES['med']['detail']}) and NAL "
+           f"({p2.DIPOLE_BOXES['nal']['detail']}), whose SST difference is the index, and EUR "
+           f"({p2.Z300_BOXES['eur']['detail']}); EUR and NAL also give the Z300 box difference "
+           f"{fig22.Z300_LABEL} of Fig. 22." if meta["marked"] else ""))
     caption += " " + summers_list(panels)
     missing = [name for k, (name, _) in fig23.RUNS.items()
                if not any(p["key"] == k for p in panels)]
@@ -339,13 +344,15 @@ def figure(index, panels, out, field="z300"):
                               boxstyle="round,pad=0.4"))
         for b in meta["boxes"]:
             vz.draw_box(ax, b, lw=0.9, color=vz.INK_SOFT)
-        if p["key"] == "ERA5":
-            for name, b in meta["z300_boxes"].items():
-                vz.draw_box(ax, b, lw=1.4, ls="-", color=Z300_BOX_COLOR, zorder=6)
-                ax.text(b["lon"][0] + 0.8, b["lat"][1] - 0.8, name.upper(),
-                        transform=ccrs.PlateCarree(), ha="left", va="top",
-                        fontsize=fig18.FS - 0.5, fontweight="bold", color=Z300_BOX_COLOR, zorder=7,
-                        bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=0.8))
+        for name, b in meta["marked"].items() if p["key"] == "ERA5" else ():
+            vz.draw_box(ax, b, lw=1.4, ls="-", color=BOX_COLOR, zorder=6)
+            right = name in LOWER_RIGHT_LABEL
+            ax.text(b["lon"][1] - 0.8 if right else b["lon"][0] + 0.8,
+                    b["lat"][0] + 0.8 if right else b["lat"][1] - 0.8, name.upper(),
+                    transform=ccrs.PlateCarree(), ha="right" if right else "left",
+                    va="bottom" if right else "top",
+                    fontsize=fig18.FS - 0.5, fontweight="bold", color=BOX_COLOR, zorder=7,
+                    bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=0.8))
         ax.set_title(f"({letter}) {title(p)}", loc="left", fontsize=fig18.FS + 0.5,
                      color=vz.INK, pad=3)
 

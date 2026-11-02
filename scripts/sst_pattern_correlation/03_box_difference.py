@@ -1,7 +1,7 @@
 """
 Box-difference index of the JJA 2026 SST pattern for each dataset:
-area-mean JJA SST anomaly over the Mediterranean box (30-45N, 0-20E) minus
-that over the mid-latitude North Atlantic box (40-50N, 60-20W), see
+area-mean JJA SST anomaly over the Mediterranean box (30-45N, 0-30E) minus
+that over the North Atlantic box (35-55N, 50-20W, as the Z300 one), see
 src/pattern_2026.DIPOLE_BOXES.
 
 A simpler measure of 2026-likeness than the pattern correlation: it asks only

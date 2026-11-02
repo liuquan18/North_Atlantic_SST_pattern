@@ -411,21 +411,20 @@ def region_masks(ocean_mask: xr.DataArray) -> dict[str, xr.DataArray]:
 #: mid-latitude Atlantic), and the warming common to both boxes
 #: largely cancels. Signed so that a 2026-like summer is positive.
 DIPOLE_BOXES = {
-    "nal": dict(label="North Atlantic", detail="40–50°N, 60–20°W",
-                lon=(-60.0, -20.0), lat=(40.0, 50.0)),
-    "med": dict(label="Mediterranean", detail="30–45°N, 0–20°E",
-                lon=(0.0, 20.0), lat=(30.0, 45.0)),
+    "nal": dict(label="North Atlantic", detail="35–55°N, 50–20°W",
+                lon=(-50.0, -20.0), lat=(35.0, 55.0)),
+    "med": dict(label="Mediterranean", detail="30–45°N, 0–30°E",
+                lon=(0.0, 30.0), lat=(30.0, 45.0)),
 }
 DIPOLE_LABEL = "MED − NAL"
 
 #: Box-difference index of JJA 300 hPa geopotential height, EUR − NAL: the high
-#: centre over Europe minus the low centre over the North Atlantic. Not the SST
-#: boxes above; the "nal" boxes differ.
+#: centre over Europe minus the low centre over the North Atlantic, the same
+#: "nal" box as the SST index above.
 Z300_BOXES = {
     "eur": dict(label="Europe", detail="35–55°N, 10°W–20°E",
                 lon=(-10.0, 20.0), lat=(35.0, 55.0)),
-    "nal": dict(label="North Atlantic", detail="35–55°N, 50–20°W",
-                lon=(-50.0, -20.0), lat=(35.0, 55.0)),
+    "nal": DIPOLE_BOXES["nal"],
 }
 
 

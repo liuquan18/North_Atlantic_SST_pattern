@@ -2,8 +2,8 @@
 Figure 22 box difference -- the box-difference index MED − NAL and its two box
 means, each observed summer against the MPI-GE summers of its climate.
 
-(a) fig 22's former panel (c): ERA5 MED − NAL, Mediterranean (30–45°N, 0–20°E)
-    minus North Atlantic (40–50°N, 60–20°W) JJA SST anomaly
+(a) fig 22's former panel (c): ERA5 MED − NAL, Mediterranean (30–45°N, 0–30°E)
+    minus North Atlantic (35–55°N, 50–20°W) JJA SST anomaly
     (data/sst_pattern_corr/box_difference.nc, 03_box_difference.py), on the
     50th / 90th / 99th percentiles and mean of the 500 MPI-GE summers in the 10
     years around each year.
@@ -51,7 +51,7 @@ CAPTION = (
     f"Right: the same quantities in ERA5, {fig22.BOX_YEARS[0]}–{p2.REF_YEAR}, and in the "
     "higher-resolution runs, all "
     f"historical + scenario summers {fig22.BOX_YEARS[0]}–{fig22.BOX_YEARS[1]} where available, "
-    "pooled over members (ICON-EPOC: 1 run, 1991–2025; ICON-EERIE: 3, r1 1991–2030, r2 to "
+    "pooled over members (ICON-EPOC: 1 run, 1991–2026; ICON-EERIE: 3, r1 1991–2030, r2 to "
     "2014, r3 to 2020; MPI-ESM1.2-ER: 3, 1991–2030; "
     "sample size in brackets; box 25th–75th percentile, line median, whiskers 5th–95th "
     "percentile, dots beyond).")
