@@ -10,7 +10,10 @@
 #
 # km-scale ICON (EPOC): 10 km atmosphere / 5 km ocean coupled runs.
 #   epoc2_010  control,              1990-2024
-#   epoc2_020  historical + ssp585,  1990-2026-06 (still running)  <- the "ICON-historical" run
+#   epoc2_020  historical + ssp585,  1990-2026-09 (still running)  <- the "ICON-historical" run
+#
+# EPOC_EXPS selects the runs (default both), e.g. EPOC_EXPS=epoc2_020 after the
+# transient run has advanced: the control has nothing new.
 #
 # Three things about this output are not like the CMIP archives:
 #
@@ -70,7 +73,7 @@ process_file() {
 }
 export -f process_file
 
-for exp in epoc2_010 epoc2_020; do
+for exp in ${EPOC_EXPS:-epoc2_010 epoc2_020}; do
     src=${EXP_DIR[$exp]}
     echo "==================== ${exp} ===================="
     mkdir -p "${WORK}/reg_${NA025_ID}" "${WORK}/gm"
