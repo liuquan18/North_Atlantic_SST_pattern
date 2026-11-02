@@ -57,20 +57,18 @@ CAPTION = (
     "percentile, dots beyond).")
 
 
-def figure(win_years, series, marked, boxes):
+def figure(win_years, series, wins, ylabels, marked, boxes, title, caption, out):
     """
-    One panel per ROWS entry: the ERA5 `series` (DataArray over year) on the
-    windows (`win_years`) of the MPI-GE values, with the column of box plots
-    `boxes` (from fig22.box_samples) on the right.
+    One panel per `ylabels` entry: the ERA5 `series` (DataArray over year) on
+    the MPI-GE window levels `wins` (fig22.window_levels of `win_years`), with
+    the column of box plots `boxes` (from fig22.box_samples) on the right;
+    panels (b) and (c), the two boxes, on one y range.
     """
     vz.use_style()
     meth = fig18.METHODS["rank"]
-    with xr.open_dataset(p2.dipole_file()) as ds:
-        wins = [fig22.window_levels(ds["MPI-GE" + suffix].load(), win_years)
-                for suffix, _ in ROWS]
-    n = len(ROWS)
+    n = len(ylabels)
 
-    text = textwrap.fill(CAPTION, fig22.CAPTION_WIDTH)
+    text = textwrap.fill(caption, fig22.CAPTION_WIDTH)
     caption_in = fig22.CAPTION_HEAD_IN + fig22.LINE_IN * (text.count("\n") + 1)
     top = 0.98
     height = (caption_in + fig22.BOTTOM_IN + fig22.ROW_IN * n) / top
@@ -85,7 +83,7 @@ def figure(win_years, series, marked, boxes):
     fig.subplots_adjust(left=0.085, right=0.985, top=top,
                         bottom=(caption_in + fig22.BOTTOM_IN) / height)
 
-    for ax, x, win, (_, ylabel) in zip(mains, series, wins, ROWS):
+    for ax, x, win, ylabel in zip(mains, series, wins, ylabels):
         fig18.panel_series_levels(ax, win, x.year.values, x.values, dict(ylabel=ylabel),
                                   meth["levels"], [y for y in marked if y in x.year], "ERA5")
     for ax in mains[1:]:
@@ -111,14 +109,14 @@ def figure(win_years, series, marked, boxes):
         ax.set_ylim(lim)
     mains[-1].set_xlim(win_years[0] - 1, win_years[-1] + 2)
 
-    fig.text(0.012, (caption_in - 0.04) / height, CAPTION_TITLE, ha="left", va="top",
+    fig.text(0.012, (caption_in - 0.04) / height, title, ha="left", va="top",
              fontsize=fig18.FS, fontweight="bold", color=vz.INK)
     fig.text(0.012, (caption_in - fig22.CAPTION_HEAD_IN) / height, text, ha="left",
              va="top", fontsize=fig18.FS, color=vz.INK, linespacing=1.45)
-    fig.savefig(OUT, dpi=300, facecolor="white")
-    fig.savefig(OUT.with_suffix(".pdf"), facecolor="white")
-    print(f"wrote {OUT}")
-    for x, win, (_, ylabel) in zip(series, wins, ROWS):
+    fig.savefig(out, dpi=300, facecolor="white")
+    fig.savefig(out.with_suffix(".pdf"), facecolor="white")
+    print(f"wrote {out}")
+    for x, win, ylabel in zip(series, wins, ylabels):
         print(f" {ylabel.replace(chr(10), ' ')}:")
         for y in marked:
             if y in x.year:
@@ -138,8 +136,11 @@ def main():
     with xr.open_dataset(p2.dipole_file()) as ds:
         series = [ds["ERA5" + suffix].load().sel(year=slice(int(years[0]), p2.REF_YEAR))
                   .dropna("year") for suffix, _ in ROWS]
+        wins = [fig22.window_levels(ds["MPI-GE" + suffix].load(), win_hwd.year.values)
+                for suffix, _ in ROWS]
     boxes = fig22.box_samples([(p2.dipole_file(), suffix) for suffix, _ in ROWS], hwd=False)
-    figure(win_hwd.year.values, series, marked, boxes)
+    figure(win_hwd.year.values, series, wins, [y for _, y in ROWS], marked, boxes,
+           CAPTION_TITLE, CAPTION, OUT)
 
 
 if __name__ == "__main__":

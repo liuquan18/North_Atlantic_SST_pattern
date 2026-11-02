@@ -1,8 +1,8 @@
 """
 Figure 8 -- does a 2026-like SST pattern come with more European heatwave days?
 
-One scatter panel per dataset with daily Tmax (ERA5, MPI-GE, km-scale ICON
-(EPOC) and EERIE; MPI-ESM1.2-ER has none). Every season (and member) in
+One scatter panel per dataset with daily Tmax (ERA5, MPI-GE, MPI-ESM1.2-ER
+r2 and r3, km-scale ICON (EPOC) and EERIE). Every season (and member) in
 PERIOD = 1990-2026 is one point -- the window the observations cover, so
 the models are compared over the same climate and not scored on their
 late-century seasons. A record that ends earlier (EPOC, until its JJA 2026
@@ -19,7 +19,7 @@ Every run writes two versions: as is, and with the forced trend removed from
 the heatwave days (file suffix _detrended). The pattern correlation is left
 as it is: the box mean is removed before correlating, so the uniform warming
 is already out of it. detrend(): MPI-GE minus its 50-member mean, year by
-year; every other record (and EERIE member) minus its own least-squares line
+year; every other record (and EERIE / MPI-ER member) minus its own least-squares line
 over all its seasons in the panel.
 
 With an argument `atl` or `med`, x is the pattern correlation scored over
@@ -62,7 +62,7 @@ import src.pattern_2026 as p2
 import src.viz2026 as vz
 from fig1_patterns_simulations import VARIANT, land_mean_series, scored_over
 
-KEYS = ["ERA5", "MPI-GE", "ICON-EPOC-hist", "EERIE"]
+KEYS = ["ERA5", "MPI-GE", "MPI-ER", "ICON-EPOC-hist", "EERIE"]
 #: observed seasons marked in the ERA5 panel; 2026 is the reference season
 #: (r = 1 by construction) and is part of the fit like every other season
 ERA5_MARKED = [p2.REF_YEAR, 2015, 2003]
@@ -302,7 +302,7 @@ def plot(corr, half, detrended):
              f"x: pattern correlation over {p2.half_label(half)}  ·  y: land-mean heatwave "
              f"days, {hw.MEAN_BOX_LABEL} (Xu et al. 2026)  ·  both against 1991–2020 of the same dataset\n"
              + ("heatwave days with the forced part removed: MPI-GE minus its 50-member mean; ERA5, EPOC and each "
-                f"EERIE member minus a linear fit over each record's seasons in {PERIOD[0]}–{PERIOD[1]}  ·  "
+                f"EERIE / MPI-ER member minus a linear fit over each record's seasons in {PERIOD[0]}–{PERIOD[1]}  ·  "
                 "pattern correlation as is (box mean already removed)\n"
                 if detrended else "")
              + f"ERA5 panel: all seasons {y_all[0]}–{y_all[1]}, black line their fit, light line the {PERIOD[0]}–{PERIOD[1]} fit  ·  "

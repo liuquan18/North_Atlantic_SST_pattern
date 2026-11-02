@@ -16,8 +16,9 @@ Columns
              (MPI-GE: the 50-member mean, i.e. the forced signal) and smoothed
              with a trailing 4-year mean (src.extremes.smooth_covariate)
 
-MPI-ESM1.2-ER is absent (no daily Tmax). EPOC control heatwaves come from
-daily mean temperature (its Tmax is on tape only).
+MPI-ESM1.2-ER has members 2 and 3 only (r1 has no daily Tmax before 2014).
+EPOC control heatwaves come from daily mean temperature (its Tmax is on tape
+only).
 """
 import sys
 from pathlib import Path
@@ -41,6 +42,7 @@ METRICS = ["hwd", "hwcum", "hwexcess", "hwpeak"]
 KINDS = {
     "ERA5": "observed",
     "MPI-GE": "large ensemble",
+    "MPI-ER": "eddy-resolving transient",
     "ICON-EPOC-hist": "km-scale transient",
     "EERIE": "km-scale transient",
     "EERIE-ctrl": "km-scale control",

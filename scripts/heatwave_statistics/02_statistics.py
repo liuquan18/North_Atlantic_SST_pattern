@@ -23,7 +23,7 @@ A. ERA5 alone -- era5_seasons.csv, era5_robustness.csv, era5_gev_params.csv,
 
 B. Internal variability -- anomaly_exceedance.csv
    Anomaly = season minus forced mean. Forced mean: MPI-GE 50-member mean
-   year by year; single transient runs (ERA5, EPOC, EERIE members) least
+   year by year; single transient runs (ERA5, EPOC, EERIE, MPI-ER members) least
    squares on T; control runs a linear drift in time. How often does each
    simulation produce an anomaly at least as large as ERA5's 2003 / 2026
    (absolute, in days or degC*day), and how often one as large in units of its
@@ -38,7 +38,7 @@ C. Return periods of the observed values in the simulated climates --
    * MPI-GE, empirical (no fit): seasons of all members in 1850-1900, around
      2003 and 2026 (calendar +-10 years), and at ERA5's 2003 / 2026 warming
      level (forced T within +-WL_TOL of ERA5's smoothed T).
-   * MPI-GE and the km-scale transient runs: the same NS-GEV as ERA5,
+   * MPI-GE, MPI-ER and the km-scale transient runs: the same NS-GEV as ERA5,
      evaluated at the dataset's own T of 2003 and 2026 and at ERA5's.
    * control runs: stationary GEV (drift removed, mean kept) and empirical
      counts -- the return period in an unforced climate.
@@ -88,7 +88,8 @@ N_BOOT_SENS = max(N_BOOT * 3 // 10, 10)
 WL_TOL = 0.05        # K, warming-level matching of MPI-GE seasons
 CAL_HALF = 10        # years, calendar windows around 2003 / 2026
 PREIND = (1850, 1900)
-TRANSIENT_FIT = {"MPI-GE": (1850, 2100), "ICON-EPOC-hist": (1990, 2026), "EERIE": (1950, 2050)}
+TRANSIENT_FIT = {"MPI-GE": (1850, 2100), "MPI-ER": (1950, 2099), "ICON-EPOC-hist": (1990, 2026),
+                 "EERIE": (1950, 2050)}
 CONTROLS = ["EERIE-ctrl", "ICON-sap-ctrl", "ICON-EPOC-ctrl"]
 #: bootstrap processes: a whole compute node under SLURM, a few on a login node
 JOBS = min(64, int(os.environ.get("SLURM_CPUS_ON_NODE", 8)))

@@ -21,7 +21,9 @@
 # daily maximum: >= the daily mean temp2 everywhere, Europe-land July mean
 # Tmax - Tmean = 4.3 K. Steps are stamped 23:56 of the day they cover, so no
 # time shift. (The 201 in the monthly `echam` stream is NOT the monthly max of
-# these.) The .sz files are szip-compressed GRIB; cdo 2.5 reads them.
+# these.) The .sz files are szip-compressed GRIB; cdo 2.5 reads them. Their
+# absolute time axis ("day as %Y%m%d.%f") is not decoded by xarray, so the
+# output gets a relative one (cdo -r).
 #
 # Per year: stage (requested for the whole year range up front, so the tape
 # library can order the reads; run the full 1950-2099 in ~25-year chunks so the
@@ -99,8 +101,8 @@ one_year() {
     [ "$(echo "$files" | wc -l)" -eq $((m1 - m0 + 1)) ] \
         || { echo "!! r${m} ${y}: expected $((m1 - m0 + 1)) g3bid files, got: $files"; return 1; }
 
-    cdo -s -O -f nc4 -z zip_1 -setname,tmax -setunit,degC -subc,273.15 \
-        -remapbil,"$grid" -mergetime \
+    cdo -s -O -r -f nc4 -z zip_1 -setreftime,1850-01-01,00:00:00,1day \
+        -setname,tmax -setunit,degC -subc,273.15 -remapbil,"$grid" -mergetime \
         $(for f in $files; do echo "-selcode,201 $f"; done) "${out}.tmp"
     nt=$(cdo -s ntime "${out}.tmp")
     [ "$nt" -eq 214 ] || { echo "!! r${m} ${y}: ${nt} days, expected 214"; return 1; }

@@ -28,9 +28,13 @@
 #           r2 / r3 (erc2023 / erc2024): the DKRZ 0.25 deg remap of the monthly
 #           atm_2d_1mth_mean stream, picked by run_<YYYYMM> directory as well;
 #           1975-2030 for all three.
+#   MPI-ER  r2 only: ECHAM Amon2d code 151 (Pa) of ER3, hist + ssp585 (the
+#           ssp585 files are also named *-hist_*), 1950-2099. Months stamped at
+#           their end, so -selmon,6/8 is JJA. ER5 (r3) Amon2d ends 1989 and ER
+#           (r1) starts 2014, as for Z300 in 10_model_zg.sh.
 #
 # Output: data/circulation/<dataset>_jja_slp_2p5deg.nc, variable slp (hPa):
-# ERA5 (year, lat, lon), MPI-GE / ICON-EPOC / EERIE (member, year, lat, lon),
+# ERA5 (year, lat, lon), MPI-GE / ICON-EPOC / EERIE / MPI-ER (member, year, lat, lon),
 # from stack_slp.py.
 
 set -euo pipefail
@@ -44,7 +48,7 @@ export WORK=${WORK_BASE}/slp
 export OUT_SLP=${PROJECT_ROOT}/data/circulation
 mkdir -p "${WORK}/era5" "${WORK}/mpige" "$OUT_SLP" "${PROJECT_ROOT}/logs"
 
-echo "=== 1/5 ERA5 JJA MSL, 1940-${REF_YEAR} ==="
+echo "=== 1/6 ERA5 JJA MSL, 1940-${REF_YEAR} ==="
 era5_year() {
     year=$1
     out=${WORK}/era5/slp_jja_${year}.nc
@@ -63,7 +67,7 @@ parallel -j 16 era5_year ::: $(seq 1940 "$REF_YEAR")
 cdo -s -O -setattribute,slp@units=hPa -setname,slp -mergetime ${WORK}/era5/slp_jja_*.nc \
     "${WORK}/era5_jja_slp.nc"
 
-echo "=== 2/5 MPI-GE JJA psl, 50 members, ${MPIGE_Y0}-${MPIGE_Y1} ==="
+echo "=== 2/6 MPI-GE JJA psl, 50 members, ${MPIGE_Y0}-${MPIGE_Y1} ==="
 mpige_member() {
     mem=r$1i1p1f1
     out=${WORK}/mpige/slp_jja_${mem}.nc
@@ -84,7 +88,7 @@ mpige_member() {
 export -f mpige_member
 parallel -j 25 mpige_member ::: $(seq 1 50)
 
-echo "=== 3/5 ICON-EPOC JJA psl, 1990-2025 ==="
+echo "=== 3/6 ICON-EPOC JJA psl, 1990-2025 ==="
 export EPOC=/work/bm1313/b383127/epoc-icon-2024.10_aerosols/experiments/epoc2_020/work
 export GRID_EPOC=/pool/data/ICON/grids/public/mpim/0054/icon_grid_0054_R02B08_G.nc
 export WGT_EPOC=${WORK}/wgt_epoc_r144x73.nc
@@ -106,16 +110,19 @@ if [ ! -s "${WORK}/epoc/slp_jja_r1.nc" ]; then
     rm -f ${WORK}/epoc/slp_jja_[12]*.nc
 fi
 
-echo "=== 4/5 EERIE r1-r3 JJA psl, 1975-2030 ==="
+echo "=== 4/6 EERIE r1-r3 JJA psl, 1975-2030 ==="
 mkdir -p "${WORK}/eerie"
 CMOR=/work/bm1344/DKRZ/CMOR/EERIE/HighResMIP/MPI-M/ICON-ESM-ER
-r1=$(for y in $(seq 1975 2030); do
-    ls ${CMOR}/{hist-1950,highres-future-ssp245}/r1i1p1f1/Amon/psl/gr/v20240618/psl_*_${y}01-${y}12.nc 2>/dev/null || true
-done)
-cdo -s -O -setattribute,slp@units=hPa -setname,slp -divc,100 -yearmean -sellonlatbox,${SLP_BOX} \
-    -remapcon,r144x73 -selname,psl -selmon,6/8 -mergetime $r1 "${WORK}/eerie/slp_jja_r1.nc"
+if [ ! -s "${WORK}/eerie/slp_jja_r1.nc" ]; then
+    r1=$(for y in $(seq 1975 2030); do
+        ls ${CMOR}/{hist-1950,highres-future-ssp245}/r1i1p1f1/Amon/psl/gr/v20240618/psl_*_${y}01-${y}12.nc 2>/dev/null || true
+    done)
+    cdo -s -O -setattribute,slp@units=hPa -setname,slp -divc,100 -yearmean -sellonlatbox,${SLP_BOX} \
+        -remapcon,r144x73 -selname,psl -selmon,6/8 -mergetime $r1 "${WORK}/eerie/slp_jja_r1.nc"
+fi
 for pair in 2:erc2023 3:erc2024; do
     m=${pair%%:*}; exp=${pair#*:}
+    [ -s "${WORK}/eerie/slp_jja_r${m}.nc" ] && continue
     B=/work/bm1344/k202193/ICON/${exp}/postprocessing/interpolation
     files=$(for y in $(seq 1975 2030); do for mo in 06 07 08; do
         ls ${B}/{,SSP245/}atm_2d_1mth_mean_remap025/run_${y}${mo}01T*/*.nc 2>/dev/null || true
@@ -133,7 +140,22 @@ for pair in 2:erc2023 3:erc2024; do
     rm -f ${WORK}/eerie/r${m}_*.nc
 done
 
-echo "=== 5/5 stack ==="
+echo "=== 5/6 MPI-ER r2 (ER3) JJA SLP, 1950-2099 ==="
+mkdir -p "${WORK}/mpier"
+if [ ! -s "${WORK}/mpier/slp_jja_r2.nc" ]; then
+    ER=/work/uo0122/u241089/MPIESM
+    files=$(for y in $(seq 1950 2099); do for m in 06 07 08; do
+        ls ${ER}/ER3-{hist,ssp585}/outdata/echam6/Amon2d_ER3-hist_${y}${m}.grb 2>/dev/null || true
+    done; done)
+    [ "$(echo "$files" | wc -w)" -eq 450 ] || { echo "ERROR: ER3 Amon2d JJA incomplete" >&2; exit 1; }
+    # the files hold only Jun/Jul/Aug, so yearmean == JJA mean; -r: ECHAM's
+    # absolute time axis (day as %Y%m%d.%f) is not decoded by xarray
+    cdo -s -O -r -f nc -setattribute,slp@units=hPa -setname,slp -divc,100 -yearmean \
+        -sellonlatbox,${SLP_BOX} -remapcon,r144x73 -selcode,151 -mergetime $files \
+        "${WORK}/mpier/slp_jja_r2.nc"
+fi
+
+echo "=== 6/6 stack ==="
 activate_python
 python3 "${SCRIPTS}/pre_process/stack_slp.py"
 echo "=== done ==="

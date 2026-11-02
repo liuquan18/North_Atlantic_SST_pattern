@@ -11,8 +11,7 @@ run in place of ERA5, one line per realization, over YEARS (1991-2030).
 Runs (RUNS): ICON-EPOC (hist + SSP5-8.5, 1 run), ICON-EERIE (hist + SSP2-4.5,
 r1-r3) and MPI-ESM1.2-ER (hist + SSP5-8.5, r2 and r3; r1 has no daily output
 before 2014, so no heatwave reference). Colour = model, line style = member.
-A run that has no heatwave days yet (MPI-ER while its daily Tmax is being
-recalled from tape) is drawn in (b) only. No summers are marked.
+A run without heatwave days in season_table.csv is drawn in (b) only. No summers are marked.
 """
 import importlib
 import sys

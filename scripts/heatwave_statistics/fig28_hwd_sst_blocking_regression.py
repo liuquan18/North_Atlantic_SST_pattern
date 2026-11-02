@@ -23,12 +23,14 @@ Three JJA quantities per season (and member):
 
 The blocking index is chosen by the argument `slp` (default) or `z300`
 (CIRC); the outputs are named fig28_hwd_sst_<index>_regression*. Z300 exists
-for the models from 1991 only, and for ICON-EERIE r1 only.
+for the models from 1991 only, and for ICON-EERIE r1 only. MPI-ESM1.2-ER enters
+with r2 alone under either index: its heatwave days are r2 and r3, but SLP and
+Z300 exist on disk for r2 only (pre_process/10_model_zg.sh, 11_slp.sh).
 
 Pairs (pairs(), y regressed on x): hwd on the index, bd on the index, hwd on bd.
-Datasets (KEYS): ERA5, MPI-GE, ICON-EPOC (hist + SSP5-8.5) and ICON-EERIE
-(hist + SSP2-4.5, r1-r3 pooled) -- those with all three quantities;
-MPI-ESM1.2-ER has no heatwave days. Seasons of PERIOD (1990-2026) as in fig 8;
+Datasets (KEYS): ERA5, MPI-GE, MPI-ESM1.2-ER r2 (hist + SSP5-8.5), ICON-EPOC
+(hist + SSP5-8.5) and ICON-EERIE (hist + SSP2-4.5, r1-r3 pooled) -- those with
+all three quantities. Seasons of PERIOD (1990-2026) as in fig 8;
 ERA5 is drawn over its whole record 1940-2026 (black line) with the PERIOD
 fit light. Only seasons that have all three quantities enter.
 
@@ -65,10 +67,10 @@ import src.heatwave as hw
 import src.pattern_2026 as p2
 import src.viz2026 as vz
 
-KEYS = ["ERA5", "MPI-GE", "ICON-EPOC-hist", "EERIE"]
-NAMES = {"ERA5": "ERA5", "MPI-GE": "MPI-GE", "ICON-EPOC-hist": "ICON-EPOC",
+KEYS = ["ERA5", "MPI-GE", "MPI-ER", "ICON-EPOC-hist", "EERIE"]
+NAMES = {"ERA5": "ERA5", "MPI-GE": "MPI-GE", "MPI-ER": "MPI-ER r2", "ICON-EPOC-hist": "ICON-EPOC",
          "EERIE": "ICON-EERIE r1–r3"}
-SLP_STEM = {"ERA5": "era5", "MPI-GE": "mpige", "ICON-EPOC-hist": "epoc2_020",
+SLP_STEM = {"ERA5": "era5", "MPI-GE": "mpige", "MPI-ER": "mpier", "ICON-EPOC-hist": "epoc2_020",
             "EERIE": "eerie_hist_ssp245"}
 PERIOD = (1990, p2.REF_YEAR)
 #: MPI-GE's late century (SSP2-4.5), a second MPI-GE bar in the bar figures;
@@ -78,19 +80,19 @@ LATE_LABEL = f"MPI-GE {LATE[0]}–{LATE[1]}"
 ERA5_MARKED = [1947, 2003, p2.REF_YEAR]
 #: vertical label offset (points) of the marked seasons; 1947 and 2003 lie close
 MARK_DY = {1947: -8, 2003: 6, p2.REF_YEAR: 6}
-LABELS = {"hwd": "Heatwave days (JJA)", "bd": f"{p2.DIPOLE_LABEL} SST anomaly (°C)"}
+LABELS = {"hwd": "Heatwave days (JJA)", "bd": f"{p2.DIPOLE_LABEL}\nSST anomaly (°C)"}
 DIR = p2.PROJECT_ROOT / "data" / "circulation"
 ZG_STEM = {"ERA5": "era5", "MPI-GE": "mpige", "ICON-EPOC-hist": "epoc2_020",
-           "EERIE": "eerie_hist_ssp245"}
+           "EERIE": "eerie_hist_ssp245", "MPI-ER": "mpier"}
 
 
-def slp_index(key):
-    """(member, year) Series of the JJA SLP anomaly averaged over hw.MEAN_BOX."""
+def slp_index(key, box=hw.MEAN_BOX):
+    """(member, year) Series of the JJA SLP anomaly (hPa) averaged over `box` (lat, lon)."""
     with xr.open_dataset(DIR / f"{SLP_STEM[key]}_jja_slp_2p5deg.nc") as ds:
         slp = ds.slp.load()
-    box = slp.sel(lat=slice(*hw.MEAN_BOX["lat"]), lon=slice(*hw.MEAN_BOX["lon"]))
-    w = np.cos(np.deg2rad(box.lat)) * xr.ones_like(box.lon)
-    x = (box * w).sum(("lat", "lon")) / w.sum(("lat", "lon"))
+    sb = slp.sel(lat=slice(*box["lat"]), lon=slice(*box["lon"]))
+    w = np.cos(np.deg2rad(sb.lat)) * xr.ones_like(sb.lon)
+    x = (sb * w).sum(("lat", "lon")) / w.sum(("lat", "lon"))
     x = x.where(slp.notnull().any(("lat", "lon")))
     x = x - x.sel(year=slice(p2.CLIM_PERIOD[0], p2.CLIM_PERIOD[1])).mean("year")
     if "member" not in x.dims:
@@ -98,17 +100,17 @@ def slp_index(key):
     return x.to_series()
 
 
-def z300_index(key):
-    """(member, year) Series of the JJA Z300 anomaly (dam) averaged over hw.MEAN_BOX."""
+def z300_index(key, box=hw.MEAN_BOX):
+    """(member, year) Series of the JJA Z300 anomaly (dam) averaged over `box` (lat, lon)."""
     with xr.open_dataset(p2.DATA_DIR / f"{ZG_STEM[key]}_jja_z300_anom_1deg.nc") as ds:
         z = ds.z300.load()
     if key == "ERA5":
         z = z.squeeze("plev", drop=True)
         z = z.assign_coords(year=z.time.dt.year).swap_dims(time="year").drop_vars("time")
         z = z.expand_dims(member=[1])
-    box = z.sel(lat=slice(*hw.MEAN_BOX["lat"]), lon=slice(*hw.MEAN_BOX["lon"]))
-    w = np.cos(np.deg2rad(box.lat)) * xr.ones_like(box.lon)
-    x = (box * w).sum(("lat", "lon")) / w.sum(("lat", "lon")) / 10
+    zb = z.sel(lat=slice(*box["lat"]), lon=slice(*box["lon"]))
+    w = np.cos(np.deg2rad(zb.lat)) * xr.ones_like(zb.lon)
+    x = (zb * w).sum(("lat", "lon")) / w.sum(("lat", "lon")) / 10
     return x.where(z.notnull().any(("lat", "lon"))).to_series()
 
 
@@ -219,7 +221,8 @@ def scatter(t, var, detrended, out):
         f"({p2.DIPOLE_BOXES['med']['detail']}) minus North Atlantic "
         f"({p2.DIPOLE_BOXES['nal']['detail']}) JJA SST anomaly. {CIRC[var]['desc']} All "
         "against 1991–2020 of the same dataset. "
-        f"Seasons {PERIOD[0]}–{PERIOD[1]} (ICON-EPOC to 2025, ICON-EERIE r1 to 2026"
+        f"Seasons {PERIOD[0]}–{PERIOD[1]} (MPI-ER r2 only, the member with SLP and Z300; "
+        "ICON-EPOC to 2025, ICON-EERIE r1 to 2026"
         + (" and r2 to 2014, r3 to 2020, its members pooled" if var == "slp" else "") + "); ERA5 all seasons 1940–2026 (black line, first "
         f"statistics) and {PERIOD[0]}–{PERIOD[1]} (grey line, second); marked "
         + ", ".join(map(str, ERA5_MARKED)) + ". Lines: least-squares fit of y on x; r: Pearson "
@@ -299,7 +302,7 @@ def scatter(t, var, detrended, out):
 
 #: short tick labels of the bar figure
 TICK = {f"ERA5 1940–{p2.REF_YEAR}": "ERA5 1940–", f"ERA5 {PERIOD[0]}–{PERIOD[1]}": f"ERA5 {PERIOD[0]}–",
-        "MPI-GE": f"MPI-GE {PERIOD[0]}–", LATE_LABEL: f"MPI-GE {LATE[0]}–{LATE[1]}",
+        "MPI-GE": f"MPI-GE {PERIOD[0]}–", "MPI-ER r2": "MPI-ER r2", LATE_LABEL: f"MPI-GE {LATE[0]}–{LATE[1]}",
         "ICON-EPOC": "ICON-EPOC", "ICON-EERIE r1–r3": "ICON-EERIE", "ICON-EERIE r1": "ICON-EERIE r1"}
 
 

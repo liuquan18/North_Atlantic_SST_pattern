@@ -13,7 +13,7 @@ OUT = os.environ.get("OUT_SLP",
                      "/work/mh0033/m300883/North_Atlantic_SST_pattern/data/circulation")
 ATTRS = dict(units="hPa", long_name="JJA mean sea-level pressure")
 #: work sub-directory -> output stem (as the SST anomaly files of the dataset)
-MODELS = {"mpige": "mpige", "epoc": "epoc2_020", "eerie": "eerie_hist_ssp245"}
+MODELS = {"mpige": "mpige", "epoc": "epoc2_020", "eerie": "eerie_hist_ssp245", "mpier": "mpier"}
 
 
 def by_year(f):

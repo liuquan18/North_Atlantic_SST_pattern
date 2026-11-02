@@ -6,8 +6,8 @@ heatwave days filled, cumulative heat hollow), with 95% intervals
 (bootstrap for the GEV fits, Clopper-Pearson for empirical counts).
 "own year" = the climate of the event's own year: for ERA5 its smoothed
 global-mean SST, for MPI-GE the seasons at ERA5's warming of that year or
-within +-10 calendar years, for the km-scale transient runs their own
-forced state of that year. Rows are grouped by source; controls are
+within +-10 calendar years, for MPI-ER and the km-scale transient runs
+their own forced state of that year. Rows are grouped by source; controls are
 unforced, so they give the return period without any warming (EPOC control
 from daily mean temperature). An arrow marks an interval that runs past the
 axis, an open-ended interval (no simulated season reached the value) or a
@@ -31,7 +31,7 @@ DIR = ROOT / "data" / "heatwave_stats"
 EVENTS = (2003, 2026)
 METRICS = {"hwd": ("heatwave days", 0.0), "hwcum": ("cumulative heat", 0.22)}
 XMIN, XMAX = 1, 1e5
-COLORS = {**vz.COLORS, "ICON-sap-ctrl": vz.COLORS["MPI-ER"]}
+COLORS = vz.COLORS
 MAIN, SHIFT = "shift+scale 1950-2026", "shift 1950-2026"
 
 
@@ -60,6 +60,8 @@ def rows_for(ev):
          dict(dataset="MPI-GE", method="empirical", climate="1850-1900")),
         ("MPI-GE", "NS-GEV · 1850–1900", "model",
          dict(dataset="MPI-GE", method="NS-GEV", climate="1850-1900")),
+        ("MPI-ER", "MPI-ER hist · NS-GEV · own year", "model",
+         dict(dataset="MPI-ER", method="NS-GEV", climate=f"own {ev}")),
         ("ICON-EPOC-hist", "EPOC hist · NS-GEV · own year", "model",
          dict(dataset="ICON-EPOC-hist", method="NS-GEV", climate=f"own {ev}")),
         ("EERIE", "EERIE hist · NS-GEV · own year", "model",
@@ -112,7 +114,7 @@ def draw(ax, ev, era5, model):
                         fontsize=6.5, color=color)
     # group separators and labels
     for i in range(1, len(rows)):
-        if groups[i] != groups[i - 1] and groups[i - 1] in ("ERA5", "MPI-GE", "EERIE"):
+        if groups[i] != groups[i - 1] and groups[i - 1] in ("ERA5", "MPI-GE", "MPI-ER", "EERIE"):
             ax.axhline((y[i] + y[i - 1]) / 2, color=vz.CONTEXT, lw=0.6)
     ax.set_yticks(y, [r[1] for r in rows], fontsize=7.4)
     ax.set_xscale("log")
@@ -127,7 +129,7 @@ def main():
     vz.use_style()
     era5 = pd.read_csv(DIR / "era5_event_rp.csv")
     model = pd.read_csv(DIR / "model_event_rp.csv")
-    fig, axes = plt.subplots(1, 2, figsize=(13.5, 7.8), sharey=False,
+    fig, axes = plt.subplots(1, 2, figsize=(13.5, 8.2), sharey=False,
                              gridspec_kw=dict(wspace=0.04))
     for k, (ax, ev) in enumerate(zip(axes, EVENTS)):
         y, rows = draw(ax, ev, era5, model)
@@ -140,7 +142,8 @@ def main():
         if k == 1:
             ax.set_yticklabels([])
     # group labels on the left
-    groups = {"ERA5": "ERA5", "MPI-GE": "MPI-GE (50 members)", "ICON-EPOC-hist": "km-scale",
+    groups = {"ERA5": "ERA5", "MPI-GE": "MPI-GE (50 members)", "MPI-ER": "MPI-ER (r2, r3)",
+              "ICON-EPOC-hist": "km-scale",
               "EERIE-ctrl": "km-scale controls"}
     rows = rows_for(EVENTS[0])
     yy = np.arange(len(rows))[::-1]
@@ -160,7 +163,7 @@ def main():
              "threshold  ·  95% intervals: bootstrap (GEV), Clopper–Pearson (empirical)  ·  "
              "arrow: interval open or beyond the axis; ∞: value above the fitted GEV's upper bound\n"
              "own year: ERA5 at its smoothed global-mean SST of that year; MPI-GE at the same warming or "
-             "±10 calendar years; km-scale transient runs at their own state of that year (EPOC 2026: "
+             "±10 calendar years; MPI-ER and km-scale transient runs at their own state of that year (EPOC 2026: "
              "its 2025)",
              fontsize=7.4, color=vz.INK_SOFT, va="top")
     out = p2.FIG_DIR / "fig16_return_period_summary.png"

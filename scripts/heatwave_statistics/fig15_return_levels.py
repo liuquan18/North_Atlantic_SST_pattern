@@ -15,8 +15,8 @@ WWA-style check of the fit; 2003 and 2026 ringed.
 Right, simulations: MPI-GE seasons of all 50 members in 1850-1900, at ERA5's
 2003 warming level, around 2026 (calendar +-10 yr) and at ERA5's 2026
 warming level, as empirical return periods (no fit); the km-scale
-transient runs' nonstationary GEV in their own 2026 climate (EPOC: 2025, its
-last season); the control runs' stationary GEV (dashed). Each simulation is
+transient runs' and MPI-ER's nonstationary GEV in their own 2026 climate
+(EPOC: 2025, its last season); the control runs' stationary GEV (dashed). Each simulation is
 counted against its own 1991-2020 threshold.
 """
 import importlib
@@ -42,8 +42,8 @@ METRICS = {"hwd": ("heatwave days", "days"), "hwcum": ("cumulative heat", "°C·
 EVENTS = (2003, 2026)
 MAIN, SHIFT = "shift+scale 1950-2026", "shift 1950-2026"
 RP = np.geomspace(1.05, 3000, 200)
-COLORS = {**vz.COLORS, "ICON-sap-ctrl": vz.COLORS["MPI-ER"]}
-LABEL = {"ICON-EPOC-hist": "EPOC hist (2025)", "EERIE": "EERIE hist (2026)",
+COLORS = vz.COLORS
+LABEL = {"MPI-ER": "MPI-ER hist (2026)", "ICON-EPOC-hist": "EPOC hist (2025)", "EERIE": "EERIE hist (2026)",
          "EERIE-ctrl": "EERIE control", "ICON-sap-ctrl": "Sapphire control",
          "ICON-EPOC-ctrl": "EPOC control (Tmean)"}
 #: ERA5 climates: line style, grey level
@@ -105,7 +105,7 @@ def model_panel(ax, m, t, mpars, mrp, e_clim, e_val):
         vals, rps = ex.plotting_positions(w[m].values)
         ax.plot(rps, vals, color=COLORS["MPI-GE"], alpha=a, lw=1.6,
                 label=f"MPI-GE {lab} (n={len(w)})")
-    for key in ("ICON-EPOC-hist", "EERIE"):
+    for key in ("MPI-ER", "ICON-EPOC-hist", "EERIE"):
         row = mpars[(mpars.dataset == key) & (mpars.metric == m)].iloc[0]
         T = mrp[(mrp.dataset == key) & (mrp.climate == "own 2026") & (mrp.metric == m)]["T"].iloc[0]
         ax.plot(RP, gev(row).return_level(RP, T), color=COLORS[key], lw=1.5, label=LABEL[key])
@@ -160,7 +160,7 @@ def main():
              "threshold  ·  ERA5: shift+scale GEV (location and log-scale linear in the smoothed JJA "
              "global-mean SST anomaly), 95% bootstrap bands; dots: observed seasons moved to the 2026 "
              "climate at their percentile\nMPI-GE: empirical, all members; 'at ERA5 … warming': seasons "
-             f"whose forced global-mean SST is within ±{st.WL_TOL} K of ERA5's  ·  km-scale transient: "
+             f"whose forced global-mean SST is within ±{st.WL_TOL} K of ERA5's  ·  MPI-ER and km-scale transient: "
              "nonstationary GEV at their own 2026  ·  dashed: control runs (constant forcing), stationary GEV",
              fontsize=7.4, color=vz.INK_SOFT, va="top")
     out = p2.FIG_DIR / "fig15_heatwave_return_levels.png"

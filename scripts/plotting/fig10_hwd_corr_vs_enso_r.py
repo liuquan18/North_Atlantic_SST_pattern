@@ -8,11 +8,11 @@ the 2026-like North Atlantic SST pattern or ENSO? One point per dataset:
       (the fit of fig9_hwd_vs_enso.py)
 
 All datasets with daily temperature -- ERA5, the transient runs (MPI-GE,
-EPOC, EERIE) and the constant-forcing controls (EPOC, EERIE, sap0006) --
+MPI-ER r2 and r3, EPOC, EERIE) and the constant-forcing controls (EPOC, EERIE, sap0006) --
 over the same PERIOD = 1990-2026 as fig 8 (for the controls these are model
 years, which carry no forcing meaning; EERIE control and sap0006 simply
 contribute those 37 of their seasons; records that end earlier contribute
-what they have). MPI-ER has no daily Tmax.
+what they have).
 
 Transient runs are filled, controls hollow in the same hue. MPI-GE (diamond)
 is the pooled r over all 50 members x 37 seasons; its 50 single-member r
@@ -42,14 +42,14 @@ from fig9_hwd_vs_enso import load_enso
 KEYS = [
     ("ERA5", "ERA5 (observed)", True),
     ("MPI-GE", "MPI-ESM1-2-LR GE (pooled, 50 members)", True),
+    ("MPI-ER", "MPI-ESM1.2-ER, hist+ssp585 (r2, r3)", True),
     ("ICON-EPOC-hist", "EPOC km-scale ICON, hist+ssp585", True),
     ("ICON-EPOC-ctrl", "EPOC km-scale ICON, control (Tmean)", False),
     ("EERIE", "EERIE ICON-ESM-ER, hist+ssp245 (3 members)", True),
     ("EERIE-ctrl", "EERIE ICON-ESM-ER, control", False),
     ("ICON-sap-ctrl", "ICON Sapphire sap0006, control", False),
 ]
-#: sap0006 has no project colour; MPI-ER's violet is free here (no Tmax)
-COLORS = {**vz.COLORS, "ICON-sap-ctrl": vz.COLORS["MPI-ER"]}
+COLORS = vz.COLORS
 
 
 def paired_table(key, corr, enso):

@@ -28,6 +28,7 @@ The algorithm is in `src/heatwave.py` (tests: `test/test_heatwave.py`).
 | `07_epoc_tmean.sh` | EPOC daily MEAN T (control: Tmax only on tape; transient: for comparison) |
 | `03_eerie_tmax.sh` | EERIE ICON-ESM-ER: r1 `day/tasmax` (`gr`) 1991–2050; r2, r3 raw `atm_2d_1d_max_remap025` 1991–2020 |
 | `04_mpige_tmax.sh` | MPI-GE (MPI-ESM1-2-LR) CMIP6 `day/tasmax`, 50 members, historical + ssp245, 1850–2100, native grid |
+| `08_mpi_er_tmax.sh` | MPI-ESM1.2-ER daily `t2max` (ECHAM `g3bid` stream, code 201) recalled from the tape archive (`atlas`), r2 and r3 (ER3, ER5), hist + ssp585, 1950–2099 → 0.25° |
 | `05_heatwave_metrics.py` | heatwave detection → `data/heatwave/<ds>_heatwave_<eu025\|native>.nc`; takes dataset keys as arguments (default: all) |
 | `run_heatwave.sh` | submits 01–04, then 05 once they finish |
 
@@ -52,9 +53,10 @@ cumulative-heat definition), `onset` (first heatwave day, May–Sep). Each file 
 
 ## Not covered
 
-- **MPI-ESM1.2-ER**: there is no daily atmosphere output on disk.
-  `/work/uo0122/u241089/MPIESM/*/outdata/echam6/` holds monthly means only
-  (`Amon2d_*`, `*_ATM_mm_*`, `*_BOT_mm_*`), and `/work/mh1421/data/mpiesm/`
-  holds ocean output only.
+- **MPI-ESM1.2-ER r1 (ER)**: its daily atmosphere output was archived only
+  from 2014 (1950–2013 as monthly means), so it has no 1991–2020 reference
+  and is left out (`MEMBERS["MPI-ER"] = [2, 3]` in `src/heatwave.py`). r2 and
+  r3 come from tape via `08_mpi_er_tmax.sh`; on disk
+  (`/work/uo0122/u241089/MPIESM/*/outdata/echam6/`) there are monthly means only.
 - **ERA5 2026-09-27**: missing from the ERA5T pool. It is treated as "not hot";
   this does not affect JJA.

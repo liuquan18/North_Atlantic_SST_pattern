@@ -381,4 +381,5 @@ years, so the long heatwave-day numbers in section 4 should be read as
 - EPOC control heatwaves use daily-mean temperature (its Tmax is on tape
   only). The EPOC hist cumulative-heat fit sits at the ξ = 0.5 bound (36
   seasons).
-- MPI-ESM1.2-ER has no daily output and is absent.
+- MPI-ESM1.2-ER enters with r2 and r3 only (daily Tmax recalled from tape);
+  r1 has no daily output before 2014, so no 1991–2020 threshold.

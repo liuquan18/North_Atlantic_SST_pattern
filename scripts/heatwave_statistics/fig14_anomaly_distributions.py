@@ -34,9 +34,9 @@ st = importlib.import_module("02_statistics")
 
 DIR = ROOT / "data" / "heatwave_stats"
 METRICS = {"hwd": ("heatwave days", "days"), "hwcum": ("cumulative heat", "°C·day")}
-COLORS = {**vz.COLORS, "ICON-sap-ctrl": vz.COLORS["MPI-ER"], "ERA5": vz.INK_MUTED}
+COLORS = {**vz.COLORS, "ERA5": vz.INK_MUTED}
 SHORT = {
-    "ERA5": "ERA5", "MPI-GE": "MPI-GE", "ICON-EPOC-hist": "EPOC\nhist", "EERIE": "EERIE\nhist",
+    "ERA5": "ERA5", "MPI-GE": "MPI-GE", "MPI-ER": "MPI-ER\nhist", "ICON-EPOC-hist": "EPOC\nhist", "EERIE": "EERIE\nhist",
     "EERIE-ctrl": "EERIE\nctrl", "ICON-sap-ctrl": "Sapphire\nctrl", "ICON-EPOC-ctrl": "EPOC ctrl\n(Tmean)",
 }
 
@@ -115,7 +115,7 @@ def main():
                  fontsize=11.5, color=vz.INK, x=0.01, ha="left", y=1.0)
     fig.text(0.01, -0.03,
              f"land mean {hw.MEAN_BOX_LABEL}, Xu et al. (2026) heatwaves with each dataset's own 1991–2020 "
-             "threshold  ·  forced part: MPI-GE 50-member mean; ERA5 (1950–2026), EPOC and EERIE members: "
+             "threshold  ·  forced part: MPI-GE 50-member mean; ERA5 (1950–2026), EPOC, EERIE and MPI-ER members: "
              "regression on smoothed global-mean SST; controls: linear drift  ·  standardised: ERA5 "
              "divided by its std within ±15 yr of the event\n"
              "percentages: share of the sample's seasons at or above ERA5's 2003 / 2026 anomaly  ·  "

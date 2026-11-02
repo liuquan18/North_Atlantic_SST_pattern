@@ -47,6 +47,11 @@ COLORS = {
     # against the three hues already in use (worst normal-vision dE 16.3,
     # worst CVD dE 9.2) and repaints nothing.
     "MPI-ER": "#4a3aa7",           # violet
+    # sap0006 appears only beside all four hues above (heatwave controls), so
+    # no fifth slot can clear every all-pairs gate. Palette yellow passes CVD
+    # (worst dE 9.1 vs aqua) but sits at dE 13.7 from EPOC orange in normal
+    # vision -- every sap0006 mark therefore carries a text label.
+    "ICON-sap-ctrl": "#eda100",    # yellow
 }
 LINESTYLES = {
     "ERA5": "-",

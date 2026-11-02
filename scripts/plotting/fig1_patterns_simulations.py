@@ -18,8 +18,8 @@ are the best analogues scored over that half of the box alone, the half is
 outlined on the SST maps, and the file name gets a _atl / _med suffix.
 
 So each column asks: in the season whose SST pattern looks most like 2026,
-what did European summer heat look like? MPI-ESM1.2-ER has no daily
-atmosphere output, so its heatwave panel is left empty.
+what did European summer heat look like? MPI-ESM1.2-ER has daily Tmax for
+r2 and r3 only (r1 none before 2014): an r1 season gets an empty heatwave panel.
 
 The SST panels share one symmetric diverging scale, capped below the
 Mediterranean extremes: letting +3 degC Mediterranean cells set the range
@@ -75,6 +75,9 @@ def heatwave_season(key, year, member):
             return None
         ds = ds.drop_vars(["threshold", "climatology"]).sel(year=year)
         if "member" in ds.dims:
+            # a member without daily Tmax (MPI-ER r1)
+            if member not in ds.member:
+                return None
             ds = ds.sel(member=member)
         return ds.load()
 
