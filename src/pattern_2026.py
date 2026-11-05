@@ -109,7 +109,7 @@ DATASETS = {
                 "3 realizations, historical + ssp585"),
         Dataset("ICON-EPOC-hist", "km-scale ICON (EPOC, hist+ssp585)",
                 "epoc2_020_jja_anom_na025.nc", "epoc2_020_jja_gmsst.nc",
-                "model", "10 km atm / 5 km ocean", (1990, 2025),
+                "model", "10 km atm / 5 km ocean", (1990, 2026),
                 "historical + SSP5-8.5 forcing (from 2015), started 1990"),
         # epoc2_010: irad_co2=2 with aerosols and ozone pinned at 1990 -- a
         # constant-forcing control, not a historical run.
@@ -401,6 +401,47 @@ def region_masks(ocean_mask: xr.DataArray) -> dict[str, xr.DataArray]:
         "med": ocean_mask & in_med,
         "natl": ocean_mask & ~in_med,
     }
+
+
+#: Box-difference index of the JJA 2026 pattern: Mediterranean minus
+#: mid-latitude North Atlantic area-mean SST anomaly. A pattern correlation is
+#: dominated by small-scale structure that models at different resolution
+#: cannot place in the same spot; the difference of two large boxes keeps only
+#: the basin-scale contrast of 2026 (warm Mediterranean, near-normal
+#: mid-latitude Atlantic), and the warming common to both boxes
+#: largely cancels. Signed so that a 2026-like summer is positive.
+DIPOLE_BOXES = {
+    "nal": dict(label="North Atlantic", detail="35–55°N, 50–20°W",
+                lon=(-50.0, -20.0), lat=(35.0, 55.0)),
+    "med": dict(label="Mediterranean", detail="30–45°N, 0–30°E",
+                lon=(0.0, 30.0), lat=(30.0, 45.0)),
+}
+DIPOLE_LABEL = "MED − NAL"
+
+#: Box-difference index of JJA 300 hPa geopotential height, EUR − NAL: the high
+#: centre over Europe minus the low centre over the North Atlantic, the same
+#: "nal" box as the SST index above.
+Z300_BOXES = {
+    "eur": dict(label="Europe", detail="35–55°N, 10°W–20°E",
+                lon=(-10.0, 20.0), lat=(35.0, 55.0)),
+    "nal": DIPOLE_BOXES["nal"],
+}
+
+
+def dipole_file() -> Path:
+    """sst_pattern_corr/box_difference.nc"""
+    return RESULT_DIR / "box_difference.nc"
+
+
+def dipole_index(coarse: xr.DataArray, ocean_mask: xr.DataArray) -> dict[str, xr.DataArray]:
+    """
+    Area-mean anomaly over each DIPOLE_BOXES box on the common 1 deg ocean
+    mask, and the index med - nal, from a 1 deg field (coarsen_to_1deg).
+    """
+    out = {k: area_mean(coarse, ocean_mask & in_box(ocean_mask, b))
+           for k, b in DIPOLE_BOXES.items()}
+    out["index"] = out["med"] - out["nal"]
+    return out
 
 
 def member_dim(da: xr.DataArray) -> str | None:

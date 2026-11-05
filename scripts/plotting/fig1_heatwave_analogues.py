@@ -27,7 +27,8 @@ among those with above-median heatwave days (max_r_hot).
   bottom row  the SST pattern of the same season (box mean removed), with its
               pattern correlation against ERA5 JJA 2026
 
-MPI-ESM1.2-ER has no daily Tmax, so it has no season to select and is left out.
+MPI-ESM1.2-ER's candidates are its members r2 and r3 (r1 has no daily Tmax
+before 2014).
 
 With an argument `atl` or `med`, the pattern correlation is the one scored
 over that half of the box alone (file suffix _atl / _med).
@@ -46,7 +47,7 @@ from fig1_patterns_simulations import (VARIANT, column, land_mean_series, plot_f
 from scipy import stats
 from fig8_hwd_vs_corr import PERIOD, season_table, select_season, selection_caption
 
-KEYS = ["MPI-GE", "ICON-EPOC-hist", "EERIE"]
+KEYS = ["MPI-GE", "MPI-ER", "ICON-EPOC-hist", "EERIE"]
 
 
 def top_percent(rank):

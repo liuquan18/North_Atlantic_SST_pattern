@@ -17,18 +17,24 @@
 #
 # Anomalies are JJA means relative to the 1991-2020 JJA monthly climatology of
 # the same dataset (as everywhere in this study); the box means are area
-# weighted on each dataset's own grid -- except MPI-GE, whose tripolar grid
-# cdo cannot cut a lon/lat box out of (sellonlatbox keeps an index rectangle),
-# so it goes through a conservative remap to 1 deg first.
+# weighted on each dataset's own grid -- except MPI-GE and MPI-ER, whose
+# curvilinear ocean grids cdo cannot cut a lon/lat box out of (sellonlatbox
+# keeps an index rectangle), so they go through a conservative remap to 1 deg
+# first.
 #
 # Sources:
 #   ERA5, EERIE r1-r3, EERIE control, sap0006: the native-grid JJA anomaly
 #     files 01_era5.sh, 04_eerie.sh and 07_sap0006.sh leave in $WORK_BASE.
 #     Scratch is purged -- rerun those stages if they are gone.
-#   MPI-GE, EPOC hist + control: re-read from the permanent archives.
+#   MPI-GE, EPOC hist + control, MPI-ER r1-r3: re-read from the permanent
+#     archives.
 #
 # Output: data/sst_anomaly/nino34_jja.nc, laid out like sst_pattern_corr/corr_*.nc
 # (one variable per dataset key and index, `year` plus `member_<key>`).
+#
+# N34_STAGES (default "native mpige epoc mpier") picks the stages to run, e.g.
+# N34_STAGES=mpier to add MPI-ER alone after scratch was purged. A dataset
+# whose box means are not on scratch is taken over from the existing output.
 
 set -euo pipefail
 SCRIPTS=${NA2026_SCRIPTS:-/work/mh0033/m300883/North_Atlantic_SST_pattern/scripts}
@@ -36,7 +42,8 @@ source "${SCRIPTS}/config.sh"
 module load parallel 2>/dev/null || true
 
 WORK=${WORK_BASE}/nino34
-mkdir -p "$WORK"/{box,mpige,epoc}
+mkdir -p "$WORK"/{box,mpige,epoc,mpier}
+STAGES=" ${N34_STAGES:-native mpige epoc mpier} "
 
 export N34_BOX="-sellonlatbox,-170,-120,-5,5"
 export TROP_BOX="-sellonlatbox,-180,180,-20,20"
@@ -55,7 +62,8 @@ jja_anomaly() {
 }
 export -f jja_anomaly
 
-echo "=== 1/3 datasets with native JJA anomalies on scratch ==="
+if [[ $STAGES == *" native "* ]]; then
+echo "=== 1/4 datasets with native JJA anomalies on scratch ==="
 declare -A ANOM=(
     [era5]=${WORK_BASE}/era5/era5_anom_jja.nc
     [eerie_r1]=${WORK_BASE}/eerie/eerie_r1_anom_jja.nc
@@ -74,8 +82,10 @@ for name in "${!ANOM[@]}"; do
     boxes "$src" "${WORK}/box/${name}"
     echo "  ${name}: $(cdo -s ntime "${WORK}/box/${name}_n34.nc") seasons"
 done
+fi
 
-echo "=== 2/3 MPI-GE, 50 members (1 deg conservative remap) ==="
+if [[ $STAGES == *" mpige "* ]]; then
+echo "=== 2/4 MPI-GE, 50 members (1 deg conservative remap) ==="
 CMIP=/pool/data/CMIP6/data/CMIP/MPI-M/MPI-ESM1-2-LR/historical
 SCEN=/pool/data/CMIP6/data/ScenarioMIP/MPI-M/MPI-ESM1-2-LR/ssp245
 WGT1=${WORK}/wgt_mpige_r360x180.nc
@@ -98,8 +108,10 @@ mpige_member() {
 export -f mpige_member
 parallel -j 25 mpige_member {} "$WORK" "$WGT1" "$CMIP" "$SCEN" ::: $(seq 1 50)
 echo "  done: $(ls ${WORK}/box/mpige_r*_n34.nc | wc -l) members"
+fi
 
-echo "=== 3/3 EPOC transient + control, native 5 km ocean ==="
+if [[ $STAGES == *" epoc "* ]]; then
+echo "=== 3/4 EPOC transient + control, native 5 km ocean ==="
 ICON_OCE_GRID=/pool/data/ICON/grids/public/mpim/0045/icon_grid_0045_R02B09_O.nc
 declare -A EXP_DIR=(
   [epoc2_010]=/work/bm1313/b383127/epoc-icon-2024.10/experiments/epoc2_010/work
@@ -141,6 +153,42 @@ for exp in epoc2_010 epoc2_020; do
     done
     echo "  ${exp}: $(cdo -s ntime "${WORK}/box/${exp}_n34.nc") seasons"
 done
+fi
+
+if [[ $STAGES == *" mpier "* ]]; then
+echo "=== 4/4 MPI-ER, 3 members, TP6M 0.1 deg ocean (1 deg conservative remap) ==="
+# as in 05_mpi_er.sh: ER, ER3, ER5 = members 1, 2, 3; hist 1950-2014 + ssp585
+# 2015-2099, one ~2.2 GB file per year, months stamped at their end
+MPIER=/work/uo0122/u241089/MPIESM
+WGT_ER=${WORK}/wgt_mpier_r360x180.nc
+[ -s "$WGT_ER" ] || cdo -s gencon,r360x180 -seltimestep,1 -selname,tos \
+    ${MPIER}/ER-hist/outdata/mpiom/ER-hist_mpiom_data_2d_mm_19500101_19501231.nc "$WGT_ER"
+
+# one year file -> JJA monthly box means; decompressed once, remapped once
+mpier_year() {
+    infile=$1; run=$2; work=$3; wgt=$4
+    year=$(basename "$infile" | sed -E 's/.*_2d_mm_([0-9]{4})[0-9]{4}_.*/\1/')
+    out=${work}/mpier/${run}_${year}
+    [ -s "${out}_n34.nc" ] && [ -s "${out}_trop.nc" ] && return 0
+    tmp=$(mktemp "${work}/mpier/jja_XXXXXX.nc")
+    cdo -s -O -remap,r360x180,"$wgt" -selmon,6/8 -selname,tos "$infile" "$tmp"
+    boxes "$tmp" "$out"
+    rm -f "$tmp"
+}
+export -f mpier_year
+
+for run in ER ER3 ER5; do
+    files=$(ls ${MPIER}/${run}-hist/outdata/mpiom/${run}-hist_mpiom_data_2d_mm_*.nc \
+               ${MPIER}/${run}-ssp585/outdata/mpiom/${run}-ssp585_mpiom_data_2d_mm_*.nc)
+    parallel -j ${NA2026_JOBS:-32} mpier_year {} "$run" "$WORK" "$WGT_ER" ::: $files
+    for kind in n34 trop; do
+        cdo -s -O -setreftime,1850-01-01,00:00:00,1day -mergetime \
+            ${WORK}/mpier/${run}_????_${kind}.nc "${WORK}/mpier/${run}_mon_${kind}.nc"
+        jja_anomaly "${WORK}/mpier/${run}_mon_${kind}.nc" "${WORK}/box/mpier_${run}_${kind}.nc"
+    done
+    echo "  ${run}: $(cdo -s ntime "${WORK}/box/mpier_${run}_n34.nc") seasons"
+done
+fi
 
 echo "=== assemble ${OUT_BASE}/nino34_jja.nc ==="
 activate_python
@@ -150,6 +198,8 @@ import numpy as np
 import xarray as xr
 
 work, out = os.environ["WORK"] + "/box", os.environ["OUT"]
+outfile = f"{out}/nino34_jja.nc"
+old = xr.open_dataset(outfile).load() if os.path.exists(outfile) else xr.Dataset()
 
 
 def series(name, kind):
@@ -173,11 +223,22 @@ SOURCES = {
     "EERIE": members([f"eerie_r{m}" for m in (1, 2, 3)], [1, 2, 3], "member_EERIE"),
     "EERIE-ctrl": lambda k: series("eerie_control", k),
     "ICON-sap-ctrl": lambda k: series("sap0006", k),
+    "MPI-ER": members([f"mpier_{r}" for r in ("ER", "ER3", "ER5")], [1, 2, 3], "member_MPI-ER"),
 }
 
 parts = {}
 for key, get in SOURCES.items():
-    n34, trop = get("n34"), get("trop")
+    try:
+        n34, trop = get("n34"), get("trop")
+    except FileNotFoundError:
+        # box means purged from scratch (or that stage not run): keep the old result
+        if key not in old:
+            print(f"  {key:15s} no box means and not in {outfile}, left out")
+            continue
+        for v in (key, f"{key}_n34", f"{key}_trop"):
+            parts[v] = old[v].dropna("year", how="all")
+        print(f"  {key:15s} kept from the existing {os.path.basename(outfile)}")
+        continue
     parts[f"{key}"] = (n34 - trop).assign_attrs(
         long_name="relative Nino-3.4: Nino-3.4 minus 20S-20N mean SST anomaly", units="K")
     parts[f"{key}_n34"] = n34.assign_attrs(long_name="Nino-3.4 SST anomaly", units="K")
@@ -190,6 +251,7 @@ ds.attrs.update(
     season="JJA", climatology="1991-2020 JJA of the same dataset",
     nino34_box="5S-5N, 170W-120W", tropics_box="20S-20N",
     note="variable <key> is the relative index; <key>_n34 and <key>_trop its parts")
-ds.to_netcdf(f"{out}/nino34_jja.nc")
-print(f"  -> {out}/nino34_jja.nc")
+old.close()
+ds.to_netcdf(outfile)
+print(f"  -> {outfile}")
 PYEOF

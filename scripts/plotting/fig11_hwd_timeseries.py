@@ -6,7 +6,8 @@ counterpart of figure 2's pattern-correlation time series.
   y   land-mean JJA heatwave days in src.heatwave.MEAN_BOX (35-60N, 10W-30E;
       Xu et al. 2026 definition, 1991-2020 reference of the same dataset)
 
-Two figures, one row per dataset (MPI-ESM1.2-ER has no daily Tmax):
+Two figures, one row per dataset (MPI-ESM1.2-ER: r2 and r3, r1 has no daily
+Tmax before 2014):
 
   fig11_heatwave_days_timeseries.png        each record's full length, on the
                                             shared axis of figure 2
@@ -17,8 +18,9 @@ Two figures, one row per dataset (MPI-ESM1.2-ER has no daily Tmax):
 Ensembles are drawn as in figure 2, by member count: MPI-GE's 50 members as a
 5-95% band, with the ensemble mean on top (the forced part of the heatwave
 count -- figure 2 draws the member maximum instead, because that is where its
-best analogue comes from); EERIE's 3 members individually, r1 (the only one
-running past 2020) in the dataset's colour. ERA5's 2003, 2015 and 2026 are
+best analogue comes from); EERIE's 3 and MPI-ER's 2 members individually,
+one in the dataset's colour (EERIE r1, the only one running past 2020; MPI-ER
+r2). ERA5's 2003, 2015 and 2026 are
 marked, and the short figure adds ERA5's least-squares linear trend.
 """
 import sys
@@ -36,10 +38,11 @@ import src.viz2026 as vz
 from fig1_patterns_simulations import land_mean_series
 from fig8_hwd_vs_corr import ERA5_MARKED
 
-ROW_ORDER = ["ERA5", "MPI-GE", "ICON-EPOC-hist", "EERIE"]
+ROW_ORDER = ["ERA5", "MPI-GE", "MPI-ER", "ICON-EPOC-hist", "EERIE"]
 SHORT = (1990, p2.REF_YEAR)
-#: the EERIE member drawn in colour: r1 is the only one past 2020
-HIGHLIGHT_MEMBER = {"EERIE": 1}
+#: the member drawn in colour: EERIE r1 is the only one past 2020; the two
+#: MPI-ER members run the same years, r2 is simply the first
+HIGHLIGHT_MEMBER = {"EERIE": 1, "MPI-ER": 2}
 
 
 def load_series():
@@ -158,11 +161,11 @@ def main():
     title = "European summer heatwave days, season by season"
     plot(series, full, p2.FIG_DIR / "fig11_heatwave_days_timeseries.png", title,
          "dotted line: 2026  ·  ERA5 2003, 2015 and 2026 marked  ·  "
-         "MPI-ESM1.2-ER omitted (no daily output)")
+         "MPI-ESM1.2-ER: r2 and r3 (r1 has no daily output before 2014)")
     plot(series, SHORT, p2.FIG_DIR / "fig11_heatwave_days_timeseries_short.png",
          f"{title}, {SHORT[0]}–{SHORT[1]}",
          "dotted line: 2026  ·  ERA5 2003, 2015 and 2026 marked; dashed: ERA5 least-squares "
-         "linear trend  ·  MPI-ESM1.2-ER omitted (no daily output)", trend=True)
+         "linear trend  ·  MPI-ESM1.2-ER: r2 and r3 (r1 has no daily output before 2014)", trend=True)
     for key, s in series.items():
         s = s.mean("member") if "member" in s.dims else s
         ref = s.sel(year=slice(*hw.REF_PERIOD)).mean()

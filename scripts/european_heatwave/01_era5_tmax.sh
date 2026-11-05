@@ -6,7 +6,10 @@
 #SBATCH --time=02:00:00
 #SBATCH --account=mh0033
 #
-# ERA5 daily maximum 2 m temperature, April-October 1991-2026, Europe 0.25 deg.
+# ERA5 daily maximum 2 m temperature, April-October 1940-2026, Europe 0.25 deg.
+# The full record (not just the 1991-2020 reference) feeds the all-years ERA5
+# fit of fig8 and the 1940-2026 series of fig11 and fig17; thresholds still come
+# from 1991-2020 only, so the extra years do not change the later ones.
 #
 # As in the paper, Tmax is the maximum of the 24 hourly 2 m temperatures of
 # each (UTC) day -- not the forecast-stream mx2t (param 201).
@@ -27,7 +30,7 @@ ET=/pool/data/ERA5/ET/sf/an/1H/167
 WORK=${HW_WORK}/era5
 mkdir -p "${WORK}/day"
 
-FIRST_YEAR=${HW_FIRST_YEAR:-1991}
+FIRST_YEAR=${HW_FIRST_YEAR:-1940}
 LAST_YEAR=${HW_LAST_YEAR:-${REF_YEAR}}
 
 # bilinear weights N320 (regularised) -> Europe 0.25 deg, built once

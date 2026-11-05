@@ -208,8 +208,8 @@ Forcing, read off the run scripts rather than the pad (they differ):
 **transient historical + SSP5-8.5 greenhouse-gas run**, but with Kinne aerosols
 held at 1850, which is what the `_aerosols` build name refers to.
 
-Coverage: `epoc2_010` 1990–2024; `epoc2_020` is still running (at 2026-03 as
-of 2026-10-05), so its last complete JJA is 2025. Neither has JJA 2026 yet.
+Coverage: `epoc2_010` 1990–2024; `epoc2_020` is still running (at 2026-09 as
+of 2026-11-02), and its last complete JJA is 2026. `epoc2_010` has no JJA 2026.
 From 2025-01 on, `epoc2_020` files are written uncompressed (~2.5 GB instead
 of ~0.85 GB); variables, names and the three traps above are unchanged.
 
@@ -271,6 +271,23 @@ so the centred variant judges each half on its own shape. The figure scripts
 `fig1_patterns_era5.py`, `fig1_patterns_simulations.py`,
 `fig1_heatwave_analogues.py` and `fig8_hwd_vs_corr.py` take `atl` or `med` as an
 argument and write the same figure with a `_atl` / `_med` suffix.
+
+**Box-difference index.** The pattern correlations of the models with ERA5 2026
+stay small (MPI-GE window 99th percentile ≈ 0.45), largely because a
+correlation over the whole box rewards placing every mesoscale feature where
+ERA5 has it, which models at other resolutions cannot do. A coarser measure of
+2026-likeness is the contrast between two large boxes
+(`src.pattern_2026.DIPOLE_BOXES`, `sst_pattern_correlation/03_box_difference.py`,
+`sst_pattern_corr/box_difference.nc`): **MED − NAL** = area-mean JJA SST
+anomaly over the Mediterranean, 30–45°N, 0–30°E, minus that over the
+North Atlantic, 35–55°N, 50–20°W (the NAL box of the Z300 difference), both on
+the common 1° ocean mask. The MED box takes in the western corner of the Black
+Sea (7 of its 236 cells; ERA5 MED 2026 +1.94 °C with them, +1.98 °C without).
+Until 2026-11-02 the boxes were 30–45°N, 0–20°E and 40–50°N, 60–20°W.
+Warming common to both boxes largely cancels. ERA5 JJA 2026 is +1.97 °C
+(MED +1.94, NAL −0.04), the record since 1940, followed by 1947 (+1.80) and
+2003 (+1.64), the same summers that stand out in heatwave days; the 1991–2020
+standard deviation is 0.67 °C. Drawn as fig. 22 (c).
 
 **Heatwave area mean.** Every area mean of heatwave quantities (scatter y
 axes, the tags on the heatwave maps) is over the land of southern Europe,

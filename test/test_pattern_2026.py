@@ -172,6 +172,16 @@ def test_split_halves_are_disjoint_and_split_at_0E(ones):
     assert not bool((atl | med).sel(lat=55.5, lon=5.5))
 
 
+def test_dipole_index_is_med_minus_nal(ones):
+    c = p2.coarsen_to_1deg(ones)
+    field = c.where(~p2.in_box(c, p2.DIPOLE_BOXES["med"]), 3.0)
+    field = field.where(~p2.in_box(c, p2.DIPOLE_BOXES["nal"]), -1.0)
+    parts = p2.dipole_index(field, xr.ones_like(c, dtype=bool))
+    assert float(parts["med"]) == pytest.approx(3.0)
+    assert float(parts["nal"]) == pytest.approx(-1.0)
+    assert float(parts["index"]) == pytest.approx(4.0)
+
+
 def test_red_sea_is_excluded_but_the_mediterranean_is_not(ones):
     ex = p2.excluded_mask(ones)
     assert bool(ex.sel(lat=22.125, lon=38.125))

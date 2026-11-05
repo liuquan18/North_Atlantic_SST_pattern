@@ -10,6 +10,7 @@ scripts/
 ├── european_heatwave/ daily Tmax -> JJA heatwave metrics -> data/heatwave/ (see its README)
 ├── pre_process/       cdo stages, submitted with sbatch; raw model/obs data -> data/sst_anomaly/
 ├── sst_pattern_correlation/  pattern correlation and region means -> data/sst_pattern_corr/
+├── circulation/   summer NAO / EA from EOFs of JJA SLP -> data/circulation/
 └── plotting/          one script per figure -> figures/pattern_2026/
 ```
 
@@ -27,6 +28,9 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 | `04_eerie.sh` | EERIE ICON-ESM-ER, control + hist/ssp245 (3 members, stacked by `stack_eerie.py`) |
 | `05_mpi_er.sh` | MPI-ESM1.2-ER, 3 realizations (calls `stack_mpi_er.py`) |
 | `06_kmscale_zoom.sh` | native-resolution zoom fields for figure 5 (needs 01 and 03) |
+| `10_model_zg.sh` | JJA Z300 anomalies of MPI-GE, ICON-EPOC, EERIE r1 and MPI-ER r2, 1991–2030, on the ERA5 Z300 1° grid (needs `ZLEVEL=300 09_era5_zg.sh`; `stack_zg.py`), for fig 25 |
+| `12_epoc_ctrl_circ.sh` | JJA Z300 (from model levels, `zg_ml2pl.py`, checked against the transient's pressure-level output) and SLP of the EPOC control, 1990–2024, for fig 28 (needs `10`, `11`) |
+| `11_slp.sh` | JJA mean SLP of ERA5 (1940–2026) and the 50 MPI-GE members (1935–2030), 2.5°, 20–80°N 90°W–40°E → `data/circulation/` (`stack_slp.py`), for `circulation/` |
 
 ## sst_pattern_correlation/
 
@@ -34,14 +38,27 @@ in `data/sst_anomaly/`. Stages 01–05 are independent and idempotent.
 |---|---|
 | `01_pattern_corr.py` | correlations (whole box and Atlantic / Mediterranean halves), best analogues, bootstrap → `sst_pattern_corr/` |
 | `02_region_means.py` | area-mean JJA anomalies per region → `sst_pattern_corr/region_means.nc` |
+| `03_box_difference.py` | box-difference index MED − NAL (30–45°N 0–30°E minus 35–55°N 50–20°W) → `sst_pattern_corr/box_difference.nc` |
+
+## circulation/
+
+| script | output |
+|---|---|
+| `01_nao_ea_eof.py` | EOFs of JJA SLP (ERA5 linearly detrended; MPI-GE ensemble mean removed, members pooled), 1940–2026: NAO = EOF1, EA = EOF2, standardised PCs, regression patterns, sign fixed by a box per mode → `data/circulation/nao_ea.nc` |
+| `fig26_nao_ea_patterns.py` | NAO and EA patterns of ERA5 and MPI-GE, with the method box |
+| `fig27_nao_ea_index_mpige.py` | as fig 22: ERA5 NAO and EA indices on the 1st–99th percentiles of the MPI-GE window, with the method box |
 
 ## plotting/
 
 `fig1_patterns_era5.py`, `fig1_patterns_simulations.py` … `fig7_event_composite.py`, one per figure. Figures 1–4 and 7 need
 `sst_pattern_correlation/01`; figure 1 also needs `european_heatwave/` (its top row), figure 5 needs `pre_process/06`, figure 6 needs `sst_pattern_correlation/02`.
 
-`fig1_patterns_era5.py`, `fig1_patterns_simulations.py`, `fig1_heatwave_analogues.py` and
-`fig8_hwd_vs_corr.py` take an optional `atl` / `med` argument: the same figure with r scored
+`fig1_sst_patterns.py` is the publication version of figure 1: SST patterns only, 2×2
+(ERA5 JJA 2026 and the best analogue of MPI-ESM1.2-ER, EPOC and MPI-GE), panel letters
+and no titles; it prints the caption lines for the panels.
+
+`fig1_patterns_era5.py`, `fig1_patterns_simulations.py`, `fig1_sst_patterns.py`,
+`fig1_heatwave_analogues.py` and `fig8_hwd_vs_corr.py` take an optional `atl` / `med` argument: the same figure with r scored
 over that half of the box only (output suffix `_atl` / `_med`).
 
 The 0.25° grid file, remap weights and cached regional remaps on scratch are

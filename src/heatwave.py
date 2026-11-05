@@ -60,12 +60,11 @@ REGION = {"lon": (-15.0, 45.0), "lat": (30.0, 72.0)}
 MEAN_BOX = {"lon": (-10.0, 30.0), "lat": (35.0, 60.0)}
 MEAN_BOX_LABEL = "35–60°N, 10°W–30°E"
 
-#: dataset key (as in src/pattern_2026.py) -> file stem. MPI-ESM1.2-ER is absent:
-#: its echam6 output was only written as monthly means, so there is no daily
-#: Tmax to detect heatwaves in.
+#: dataset key (as in src/pattern_2026.py) -> file stem.
 DATASETS = {
     "ERA5": "era5",
     "MPI-GE": "mpige",
+    "MPI-ER": "mpier",                     # daily t2max from the tape archive (08_mpi_er_tmax.sh)
     "ICON-EPOC-hist": "epoc2_020",
     "EERIE": "eerie_hist_ssp245",
     # control runs (constant forcing)
@@ -81,7 +80,9 @@ DATASETS = {
 #: Datasets with several realizations on the common grid, each read from its
 #: own r<m>/ subdirectory of the daily Tmax work dir; their metrics carry a
 #: `member` dimension, NaN in years a member was not run.
-MEMBERS = {"EERIE": [1, 2, 3]}
+#: MPI-ER r1 (ER) has daily output only from 2014 (1950-2013 was archived as
+#: monthly means), so it has no 1991-2020 reference period and is left out.
+MEMBERS = {"EERIE": [1, 2, 3], "MPI-ER": [2, 3]}
 
 #: Datasets kept on their native grid (cropped to Europe) instead of the common
 #: 0.25 deg one, with (member, year, lat, lon) metrics and their own land mask.

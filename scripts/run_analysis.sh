@@ -10,9 +10,11 @@ cd "$PROJECT_ROOT"
 
 python3 "${SCRIPTS}/sst_pattern_correlation/01_pattern_corr.py"
 python3 "${SCRIPTS}/sst_pattern_correlation/02_region_means.py"
+python3 "${SCRIPTS}/sst_pattern_correlation/03_box_difference.py"
 
 python3 "${SCRIPTS}/plotting/fig1_patterns_era5.py"
 python3 "${SCRIPTS}/plotting/fig1_patterns_simulations.py"
+python3 "${SCRIPTS}/plotting/fig1_sst_patterns.py"
 python3 "${SCRIPTS}/plotting/fig1_heatwave_analogues.py"
 python3 "${SCRIPTS}/plotting/fig2_corr_timeseries.py"
 python3 "${SCRIPTS}/plotting/fig2_corr_timeseries_short.py"
@@ -31,11 +33,13 @@ python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr_control.py"
 for half in atl med; do
     python3 "${SCRIPTS}/plotting/fig1_patterns_era5.py" $half
     python3 "${SCRIPTS}/plotting/fig1_patterns_simulations.py" $half
+    python3 "${SCRIPTS}/plotting/fig1_sst_patterns.py" $half
     python3 "${SCRIPTS}/plotting/fig1_heatwave_analogues.py" $half
     python3 "${SCRIPTS}/plotting/fig8_hwd_vs_corr.py" $half
 done
 python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso.py"
 python3 "${SCRIPTS}/plotting/fig9_hwd_vs_enso_control.py"
+python3 "${SCRIPTS}/plotting/fig17_era5_hwd_timeseries.py"
 python3 "${SCRIPTS}/plotting/fig11_hwd_timeseries.py"
 
 echo

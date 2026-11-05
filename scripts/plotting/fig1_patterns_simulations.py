@@ -18,8 +18,8 @@ are the best analogues scored over that half of the box alone, the half is
 outlined on the SST maps, and the file name gets a _atl / _med suffix.
 
 So each column asks: in the season whose SST pattern looks most like 2026,
-what did European summer heat look like? MPI-ESM1.2-ER has no daily
-atmosphere output, so its heatwave panel is left empty.
+what did European summer heat look like? MPI-ESM1.2-ER has daily Tmax for
+r2 and r3 only (r1 none before 2014): an r1 season gets an empty heatwave panel.
 
 The SST panels share one symmetric diverging scale, capped below the
 Mediterranean extremes: letting +3 degC Mediterranean cells set the range
@@ -45,6 +45,10 @@ VMAX_CAP = 2.0
 #: (dataset, which season): "ref" = JJA 2026 itself, "best" = best analogue
 COLUMNS = [("MPI-GE", "best"), ("MPI-ER", "best"), ("ICON-EPOC-hist", "best"), ("EERIE", "best")]
 HWD_LEVELS = np.arange(0, 46, 5)
+#: contour interval of a column's optional "zg" field (gpm); no zero line
+ZG_STEP = 10
+#: colour of a column's optional "zg_boxes" outlines, apart from the black contours
+ZG_BOX_COLOR = "#00a651"
 
 
 def season(key, which, best):
@@ -73,6 +77,9 @@ def heatwave_season(key, year, member):
             return None
         ds = ds.drop_vars(["threshold", "climatology"]).sel(year=year)
         if "member" in ds.dims:
+            # a member without daily Tmax (MPI-ER r1)
+            if member not in ds.member:
+                return None
             ds = ds.sel(member=member)
         return ds.load()
 
@@ -109,7 +116,7 @@ HW_NOTE = f"top-row value: land-mean heatwave days in the dashed box, {hw.MEAN_B
 
 
 def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
-                sst_region_label=None, sst_box=None):
+                sst_region_label=None, sst_box=None, zg_level=500, zg_style=None):
     """
     Heatwave days (top) over SST pattern (bottom), one column per season.
 
@@ -117,9 +124,16 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
     land-mean heatwave days) and "r_tag" for the SST panel (default: r); `lat_line` draws a dashed parallel on the
     heatwave maps, e.g. to mark a sub-region the tag refers to. `sst_box` outlines
     the part of the SST map that r was scored over, and `sst_region_label`
-    names it in the caption (default: the whole analysis box).
+    names it in the caption (default: the whole analysis box). A column's
+    optional "zg" field, geopotential height (gpm) at `zg_level` hPa, is
+    contoured over its SST map, and its optional "zg_boxes", {name: box} with
+    box as in vz.draw_box plus a "detail" string, are outlined there and named
+    in the caption. `zg_style`, a dict of name, long, step and unit, contours
+    another field in its place, e.g. sea-level pressure.
     """
     sst_region_label = sst_region_label or p2.REGION_LABEL
+    zg_style = zg_style or dict(name=f"Z{zg_level}", long=f"{zg_level} hPa geopotential height",
+                                step=ZG_STEP, unit="gpm")
     vz.use_style()
     p2.FIG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -141,7 +155,9 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
     # head room for the column titles: ~0.18 in per title line beyond the first
     title_h = 0.18 * max(c["title"].count("\n") for c in cols)
     # ...and for caption lines beyond the default two (one is in hw_note's place)
-    caption_h = 0.17 * hw_note.count("\n")
+    has_zg = any(c.get("zg") is not None for c in cols)
+    zg_boxes = {k: b for c in cols for k, b in c.get("zg_boxes", {}).items()}
+    caption_h = 0.17 * (hw_note.count("\n") + has_zg)
     top_h = 1.39 + title_h + caption_h
     fig_h = h_top + h_bot + top_h + 0.65
 
@@ -178,12 +194,26 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
         ax = fig.add_subplot(gs[1, j], projection=vz.map_projection())
         im_sst = vz.draw_map(ax, c["sst"], sst_levels, sst_cmap,
                              labels_bottom=True, labels_left=(j == 0))
+        if c.get("zg") is not None:
+            z = c["zg"]
+            step = zg_style["step"]
+            top = step * np.ceil(float(np.abs(z).max()) / step)
+            levels = [v for v in np.arange(-top, top + 1, step) if v != 0]
+            cs = ax.contour(z.lon, z.lat, z.values, levels=levels, colors=vz.INK,
+                            linewidths=1.1, linestyles=["--" if v < 0 else "-" for v in levels],
+                            transform=ccrs.PlateCarree(), zorder=5)
+            # below vz.panel_tag (zorder 6), which clabel's default would overprint
+            for label in ax.clabel(cs, fmt="%d", fontsize=6, inline_spacing=2):
+                label.set_zorder(5.5)
+        for box in c.get("zg_boxes", {}).values():
+            vz.draw_box(ax, box, color=ZG_BOX_COLOR, lw=1.5, ls="-", zorder=5.5)
         if sst_box is not None:
             vz.draw_box(ax, sst_box, lw=1.1)
         if c["r"] is not None:
             vz.panel_tag(ax, c.get("r_tag") or f"r = {c['r']:+.2f}", loc="upper right")
 
-    for i, label in enumerate(["JJA heatwave days", "JJA SST pattern"]):
+    for i, label in enumerate(["JJA heatwave days",
+                               "JJA SST pattern" + (f" + {zg_style['name']}" if has_zg else "")]):
         fig.text(0.012, gs[i, 0].get_position(fig).y0 + gs[i, 0].get_position(fig).height / 2,
                  label, rotation=90, va="center", ha="center", fontsize=9.5, color=vz.INK)
 
@@ -201,7 +231,11 @@ def plot_figure(cols, suptitle, out, *, hw_note=HW_NOTE, lat_line=None,
              "(15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
              f"{hw_note}\n"
              f"SST: {p2.VARIANTS[VARIANT]['long']}, {p2.REGION_LABEL}; r = pattern correlation with ERA5 JJA 2026 over {sst_region_label}  ·  "
-             "both against 1991–2020 of the same dataset",
+             "both against 1991–2020 of the same dataset"
+             + (f"\ncontours: JJA {zg_style['long']} anomaly, box mean removed as for the SST, "
+                f"every {zg_style['step']} {zg_style['unit']}, negative dashed, zero omitted" if has_zg else "")
+             + (f"; green box{'es' if len(zg_boxes) > 1 else ''}: " + ", ".join(f"{k} {b['detail']}" for k, b in zg_boxes.items())
+                if zg_boxes else ""),
              ha="center", va="top", fontsize=8.3, color=vz.INK_SOFT, linespacing=1.4)
 
     fig.savefig(out)

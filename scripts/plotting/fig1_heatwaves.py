@@ -3,9 +3,9 @@ Figure 1 (heatwaves) -- the European summer heatwave of each season in
 figure 1, described by several quantities instead of heatwave days alone.
 
 Columns: the seasons of figure 1 (ERA5 JJA 2026, ERA5's closest earlier
-summer, and the best SST-analogue season of MPI-GE, km-scale ICON (EPOC) and
-EERIE). MPI-ESM1.2-ER is left out: with no daily Tmax every one of its panels
-would be empty.
+summer, and the best SST-analogue season of MPI-GE, MPI-ESM1.2-ER, km-scale
+ICON (EPOC) and EERIE). A season without heatwave metrics (MPI-ER r1, which
+has no daily Tmax before 2014) drops its column.
 
 Rows (Xu et al. 2026 definition, 1991-2020 reference; see
 scripts/european_heatwave/):
@@ -43,7 +43,7 @@ import src.pattern_2026 as p2
 import src.viz2026 as vz
 from fig1_patterns_simulations import heatwave_season, land_mean, season
 
-COLUMNS = [("ERA5", "ref"), ("ERA5", "best"), ("MPI-GE", "best"),
+COLUMNS = [("ERA5", "ref"), ("ERA5", "best"), ("MPI-GE", "best"), ("MPI-ER", "best"),
            ("ICON-EPOC-hist", "best"), ("EERIE", "best")]
 
 # first day of each month on the 365-day calendar, for the onset colour bar
@@ -149,7 +149,7 @@ def main():
              "heatwave: ≥3 consecutive days with Tmax anomaly above the calendar-day 90th "
              "percentile (15-day window), detected May–Sep, land only (Xu et al. 2026)  ·  "
              "1991–2020 reference of the same dataset  ·  grey land: no heatwave  ·  "
-             f"MPI-ESM1.2-ER omitted (no daily output)  ·  tags: land mean in the dashed box, {hw.MEAN_BOX_LABEL}",
+             f"tags: land mean in the dashed box, {hw.MEAN_BOX_LABEL}",
              ha="center", fontsize=8, color=vz.INK_SOFT)
 
     out = p2.FIG_DIR / "fig1_heatwaves_2026.png"
